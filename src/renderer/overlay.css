@@ -1,0 +1,128 @@
+/* Calque de l'écran principal : nouveau message de CAPRI, au plus près de l'appel entrant de Cyberpunk 2077 (photo
+   de Tommy) : à gauche les micro-lignes rouges et l'icône de message cyan qui clignote ; le portrait rouge dans son cadre épais, avec sa languette et
+   une pile de cadres fantômes qui fuient vers le haut à gauche ; à droite l'identifiant gris, le nom en cyan, l'état
+   en rouge, puis les touches [T]. Le tout en hologramme incliné (le côté gauche plus proche), en haut de l'écran. */
+:root {
+  --red: #ff4b45;
+  --red-dim: rgba(255, 75, 69, 0.5);
+  --red-glow: rgba(255, 60, 55, 0.75);
+  --cyan: #4ff3ff;
+  --cyan-glow: rgba(79, 243, 255, 0.7);
+  --grey: rgba(170, 200, 205, 0.6);
+}
+html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+body {
+  font-family: Bahnschrift, 'Segoe UI', sans-serif;
+  font-variation-settings: 'wdth' 75; /* Bahnschrift condensée, proche de la police du jeu */
+  user-select: none; cursor: default;
+}
+
+.hud {
+  position: absolute;
+  left: 3.5vw;
+  top: 7vh;
+  display: flex;
+  align-items: flex-start;
+  transform: perspective(70vw) rotateY(16deg) scale(0.9);
+  transform-origin: left center;
+  opacity: 0;
+}
+
+/* Micro-lignes et téléphone */
+.hud-side { display: flex; flex-direction: column; align-items: flex-start; gap: 0.7vw; padding-top: 1.4vw; width: 2.6vw; }
+.hud-micro { display: flex; flex-direction: column; gap: 0.22vw; }
+.hud-micro i { display: block; font: 600 0.42vw/1.15 Consolas, monospace; font-style: normal; letter-spacing: 0.04em; color: var(--red); text-shadow: 0 0 0.3vw var(--red-glow); opacity: 0.85; white-space: nowrap; }
+.hud-phone { width: 1.7vw; fill: none; stroke: var(--cyan); stroke-width: 1.5; filter: drop-shadow(0 0 0.25vw var(--cyan-glow)); }
+.hud-phone .wave { animation: hud-ring 1s steps(1) infinite; }
+@keyframes hud-ring { 50% { opacity: 0.15; } }
+
+/* Portrait et sa pile de cadres */
+/* Cadre du contact, comme sur la photo : un carré pivoté sur le côté (vu de biais, tourné vers le texte), la pile de
+   cadres fantômes derrière lui. */
+.hud-portrait {
+  position: relative; width: 6vw; height: 7.6vw; margin: 0.4vw 1vw 0 -1.2vw;
+  /* Photo DELAMAIN : carré pivoté sur le côté, vu d'en dessous. Le point de fuite au-dessus du cadre (origine
+     haute) garde les côtés verticaux et fait descendre les bords haut et bas vers la droite, le bas plus fort. */
+  transform: perspective(13vw) rotateY(-30deg); /* largeur apparente de la photo DELAMAIN */ transform-origin: 100% -120%;
+}
+.hud-ghost {
+  position: absolute; inset: 0; border: 0.12vw solid var(--red);
+  background: rgba(255, 75, 69, 0.07); box-shadow: 0 0 0.5vw var(--red-dim);
+}
+.hud-ghost.g1 { transform: translate(-0.36vw, -0.36vw); opacity: 0.6; }
+.hud-ghost.g2 { transform: translate(-0.72vw, -0.72vw); opacity: 0.45; }
+.hud-ghost.g3 { transform: translate(-1.08vw, -1.08vw); opacity: 0.32; }
+.hud-ghost.g4 { transform: translate(-1.44vw, -1.44vw) scale(0.97); opacity: 0.2; }
+.hud-ghost.g5 { transform: translate(-1.8vw, -1.8vw) scale(0.94); opacity: 0.12; }
+.hud-card {
+  position: absolute; inset: 0; padding: 0.35vw;
+  border: 0.22vw solid var(--red); background: rgba(40, 6, 6, 0.55);
+  box-shadow: 0 0 1vw var(--red-glow), inset 0 0 0.7vw rgba(255, 75, 69, 0.45);
+}
+.hud-tab {
+  position: absolute; left: 0.45vw; top: -0.65vw; width: 1.7vw; height: 0.5vw;
+  border: 0.15vw solid var(--red); border-bottom: 0; background: rgba(255, 75, 69, 0.25);
+  box-shadow: 0 0 0.5vw var(--red-glow);
+}
+.hud-pic { position: relative; height: 100%; overflow: hidden; border: 0.1vw solid var(--red-dim); background: rgba(255, 75, 69, 0.18); }
+/* Portrait du contact, comme sur la photo : la tête de CAPRI (cheveux, visière, sourire) en monochrome rouge. */
+.hud-pic img {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  filter: contrast(1.35) brightness(1.1); /* portrait.png : la luminosité max des canaux (cheveux rouges et visière claires) */
+  opacity: 0.95;
+}
+.hud-scan { position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.4) 0 1px, transparent 1px 3px); }
+.hud-pic-name {
+  position: absolute; left: 0; right: 0; bottom: 0.35vw; text-align: center;
+  font-size: 0.45vw; font-weight: 700; letter-spacing: 0.3em; color: #ffd2cc; text-shadow: 0 0 0.35vw var(--red-glow);
+}
+
+/* Textes */
+.hud-text { position: relative; display: flex; flex-direction: column; padding-top: 1.3vw; }
+/* Voile derrière le texte, pour le lire par-dessus n'importe quelle fenêtre : sombre, semi-transparent, bords
+   fondus. Un calque transparent ne peut pas flouter le bureau (backdrop-filter ne voit que la page). */
+.hud-text::before {
+  content: ''; position: absolute; z-index: -1; inset: 0.8vw -1.4vw -0.9vw -1.4vw;
+  background: radial-gradient(ellipse at 40% 50%, rgba(8, 4, 14, 0.62) 55%, rgba(8, 4, 14, 0) 100%);
+  filter: blur(0.8vw);
+}
+.hud-id { font-family: 'Cascadia Mono', Consolas, monospace; font-size: 0.62vw; letter-spacing: 0.06em; color: var(--grey); margin-bottom: 0.25vw; }
+.hud-name {
+  font-size: 2vw; font-weight: 700; letter-spacing: 0.09em; line-height: 1;
+  color: var(--cyan); text-shadow: 0 0 0.9vw var(--cyan-glow), 0 0 0.2vw var(--cyan-glow);
+}
+.hud-state {
+  margin-top: 0.25vw; font-size: 1.6vw; font-weight: 600; letter-spacing: 0.11em; line-height: 1;
+  color: var(--red); text-shadow: 0 0 0.8vw var(--red-glow);
+}
+.hud-said {
+  margin-top: 0.5vw; width: 30vw; max-height: 4.2em; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  font-size: 1vw; font-weight: 500; letter-spacing: 0.03em; line-height: 1.38; color: #dffcff;
+  text-shadow: 0 0 0.45vw var(--cyan-glow), 0 0 0.15vw rgba(0, 0, 0, 0.9), 0.06vw 0.06vw 0.25vw rgba(0, 0, 0, 0.8);
+}
+.hud-said:empty, .hud-said-text:empty { margin-top: 0; }
+.hud-said-text { white-space: pre-wrap; }
+.hud-caret { display: inline-block; width: 0.45em; height: 0.95em; margin-left: 0.15em; vertical-align: -0.12em; background: var(--cyan); box-shadow: 0 0 0.4vw var(--cyan-glow); animation: hud-blink 0.8s steps(1) infinite; }
+.hud.idle .hud-caret { display: none; }
+@keyframes hud-blink { 50% { opacity: 0; } }
+
+/* Touches [T] */
+.hud-keys { display: flex; gap: 2.8vw; margin-top: 0.9vw; }
+.hud-key {
+  position: relative; display: flex; align-items: center; gap: 0.6vw;
+  font-size: 1.4vw; font-weight: 600; letter-spacing: 0.1em; color: var(--cyan); text-shadow: 0 0 0.7vw var(--cyan-glow);
+}
+.hud-key b {
+  display: grid; place-items: center; width: 2vw; height: 2.1vw; box-sizing: border-box;
+  border: 0.16vw solid var(--red); font-size: 1.25vw; font-weight: 600; color: var(--red);
+  text-shadow: 0 0 0.5vw var(--red-glow); box-shadow: 0 0 0.6vw var(--red-dim), inset 0 0 0.4vw var(--red-dim);
+}
+.hud-key.reject b::before {
+  content: ''; position: absolute; left: 0.68vw; top: -0.62vw;
+  border-left: 0.32vw solid transparent; border-right: 0.32vw solid transparent; border-top: 0.42vw solid var(--red);
+  filter: drop-shadow(0 0 0.25vw var(--red-glow));
+}
+/* Teinte rouge du portrait : le visage en niveaux de gris, multiplié par le rouge du HUD. */
+.hud-pic::after { content: ''; position: absolute; inset: 0; background: var(--red); mix-blend-mode: multiply; }
+.hud-pic .hud-scan { z-index: 1; }

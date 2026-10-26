@@ -1,0 +1,517 @@
+:root {
+  --bg: #0f050e;
+  --panel: #120a1c;
+  --line: #3a1d5c;
+  --purple: #8b3dff;
+  --red: #ff1f4f;
+  --green: #27f26b;
+  --text: #f4ecff;
+  --muted: #a690c4;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
+  overflow: hidden;
+  user-select: none;
+}
+
+body {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  background: var(--bg);
+}
+/* Glitch spontané de toute la fenêtre (app.js pose glitch-fx, toutes les 15 à 30 s) : secousses, couches rouge et
+   verte décalées, tranches déchirées, en 0,6 s (plus long, demandé par Tommy). Décalages réduits (Tommy) par --g, et plus encore quand elle parle
+   (glitch-doux : sans tranches, pour ne couper ni son visage ni son texte). */
+body.glitch-fx { --g: 0.45; animation: glitch-fx 0.6s steps(1) both; }
+body.glitch-fx.glitch-doux { --g: 0.18; animation-name: glitch-doux; }
+@keyframes glitch-fx {
+  0%   { transform: translate(calc(var(--g) * 0.8vw), 0); clip-path: inset(10% 0 55% 0); filter: drop-shadow(calc(var(--g) * -0.5vw) 0 rgb(248 0 48 / 0.8)) drop-shadow(calc(var(--g) * 0.5vw) 0 rgb(0 255 102 / 0.6)); }
+  20%  { transform: translate(calc(var(--g) * -1vw), calc(var(--g) * 0.3vh)); clip-path: inset(45% 0 18% 0); filter: drop-shadow(calc(var(--g) * 0.6vw) 0 rgb(248 0 48 / 0.8)) drop-shadow(calc(var(--g) * -0.6vw) 0 rgb(0 255 102 / 0.6)); }
+  40%  { transform: translate(calc(var(--g) * 0.4vw), calc(var(--g) * -0.4vh)); clip-path: none; filter: hue-rotate(80deg) saturate(1.8); }
+  60%  { transform: translate(calc(var(--g) * -0.5vw), 0); clip-path: inset(68% 0 4% 0); filter: drop-shadow(calc(var(--g) * -0.4vw) 0 rgb(248 0 48 / 0.8)); }
+  80%  { transform: translate(calc(var(--g) * 0.2vw), 0); clip-path: none; filter: none; }
+  100% { transform: none; clip-path: none; filter: none; }
+}
+@keyframes glitch-doux {
+  0%   { transform: translate(calc(var(--g) * 0.8vw), 0); filter: drop-shadow(calc(var(--g) * -0.5vw) 0 rgb(248 0 48 / 0.8)) drop-shadow(calc(var(--g) * 0.5vw) 0 rgb(0 255 102 / 0.6)); }
+  25%  { transform: translate(calc(var(--g) * -1vw), 0); filter: drop-shadow(calc(var(--g) * 0.6vw) 0 rgb(248 0 48 / 0.8)); }
+  50%  { transform: translate(calc(var(--g) * 0.4vw), 0); filter: hue-rotate(60deg) saturate(1.5); }
+  75%  { transform: translate(calc(var(--g) * -0.3vw), 0); filter: none; }
+  100% { transform: none; filter: none; }
+}
+@media (prefers-reduced-motion: reduce) { body.glitch-fx { animation: none; } }
+
+/* Interface cachée tant que la souris ne bouge pas sur la fenêtre (app.js pose ui-on), curseur compris. */
+body:not(.ui-on), body:not(.ui-on) * { cursor: none !important; }
+
+/* Barre de titre, posée par-dessus le visage. Zone de déplacement (fenêtre sans cadre) seulement visible et hors
+   plein écran : une zone de déplacement ne transmet plus les mouvements de souris à la page. */
+.bar {
+  -webkit-app-region: no-drag;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px 14px 16px;
+  background: linear-gradient(rgba(15, 5, 14, 0.94) 55%, rgba(15, 5, 14, 0));
+  opacity: 0;
+  transform: translateY(-100%);
+  pointer-events: none;
+  transition: opacity 0.25s, transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+body.ui-on .bar { opacity: 1; transform: none; pointer-events: auto; }
+body.ui-on:not(.full) .bar { -webkit-app-region: drag; }
+.brand {
+  font-weight: 800;
+  letter-spacing: 0.32em;
+  font-size: 13px;
+  color: var(--green);
+  text-shadow: 2px 1px 0 var(--purple);
+}
+.brand .dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 6px;
+  background: var(--red);
+  transform: rotate(45deg);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+.status {
+  flex: 1;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.win {
+  -webkit-app-region: no-drag;
+  width: 28px;
+  height: 26px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+}
+.win:hover { border-color: var(--line); color: var(--text); }
+.win.close:hover { background: var(--red); color: #fff; border-color: var(--red); }
+.win.on { color: var(--green); }
+
+main {
+  position: relative;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.face {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+/* Canevas aux proportions de l'image : le fondu s'applique à ses vrais bords. */
+.capri-canvas {
+  max-width: 100%;
+  max-height: 100%;
+  /* Bords de l'image fondus dans le fond de la fenêtre. */
+  mask-image: linear-gradient(to bottom, transparent, #000 7%, #000 84%, transparent), linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+  mask-composite: intersect;
+  cursor: pointer;
+}
+
+/* Visage « écran » : il occupe toute la place, la visière va d'un bord à l'autre. */
+.capri-screen:not([hidden]) {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+/* Bulle de réponse : panneau anguleux façon interface de Night City. */
+.bubble {
+  position: relative;
+  margin: 0 18px 12px;
+  padding: 14px 16px;
+  max-height: 34vh;
+  overflow-y: auto;
+  background: rgba(18, 10, 28, 0.92);
+  border: 1px solid var(--purple);
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+  box-shadow: inset 0 0 0 1px rgba(39, 242, 107, 0.08);
+  font-size: 15.5px;
+  line-height: 1.5;
+  user-select: text;
+  animation: pop 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+.bubble::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 46px;
+  height: 3px;
+  background: var(--green);
+}
+.bubble p { margin: 0; white-space: pre-wrap; }
+.bubble.error { border-color: var(--red); color: #ffb3c4; }
+.bubble .caret {
+  display: inline-block;
+  width: 8px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -2px;
+  background: var(--green);
+  animation: blink 0.8s steps(1) infinite;
+}
+
+.ask {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 16px;
+  max-height: 90px;
+  overflow: hidden;
+  transition: max-height 0.25s, padding 0.25s, opacity 0.2s;
+}
+/* Tchat caché : replié mais toujours dans la page, pour que le champ garde le focus et reçoive la dictée de
+   VoiceInput ; il se montre le temps d'un texte en cours (chat-peek). */
+body.chat-hidden:not(.chat-peek) .ask { max-height: 0; padding-bottom: 0; opacity: 0; }
+.ask input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.ask input:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(139, 61, 255, 0.18); }
+.ask input::placeholder { color: #6f5a8c; }
+.ask button {
+  width: 46px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--green);
+  color: #07040c;
+  font-size: 17px;
+  cursor: pointer;
+}
+.ask button:hover { filter: brightness(1.1); }
+.ask button:disabled { opacity: 0.4; cursor: default; }
+
+@keyframes pulse { 50% { opacity: 0.3; } }
+@keyframes blink { 50% { opacity: 0; } }
+@keyframes pop { from { opacity: 0; transform: translateY(8px) scale(0.98); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .brand .dot, .bubble, .bubble .caret { animation: none; }
+}
+
+/* Démarrage Arasaka façon Cyberpunk 2077 (boot.js, animé par Motion) : rouge Arasaka et blanc sur noir, accents
+   cyan de l'interface du jeu, cadres à coins coupés, petits textes techniques, glitch. Les états de départ sont ici ;
+   tous les mouvements sont faits par Motion. */
+.boot {
+  --ar: #f80030;
+  --ar-glow: rgba(248, 0, 48, 0.55);
+  --cy: #5ef6ff;
+  --wh: #f4f1ee;
+  --dim: rgba(244, 241, 238, 0.45);
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 42%, #1a0307 0%, #070203 55%, #020101 100%);
+  color: var(--wh);
+  font-family: 'Cascadia Mono', Consolas, monospace;
+  font-size: clamp(11px, 2.2vmin, 17px);
+  letter-spacing: 0.08em;
+  cursor: none;
+}
+.boot::after { /* lignes de balayage */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.32) 0 1px, transparent 1px 3px);
+  pointer-events: none;
+  z-index: 4;
+}
+.boot-noise { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; z-index: 3; pointer-events: none; }
+.boot-power { position: absolute; left: 0; right: 0; top: 50%; height: 100vh; margin-top: -50vh; background: var(--wh); transform: scaleY(0.003) scaleX(0); z-index: 5; }
+.boot-screen { position: absolute; inset: 0; opacity: 0; }
+
+.boot-corner { position: absolute; width: 5vmin; height: 5vmin; border: 2px solid var(--ar); opacity: 0; }
+.boot-corner.tl { top: 2.4vmin; left: 2.4vmin; border-right: 0; border-bottom: 0; }
+.boot-corner.tr { top: 2.4vmin; right: 2.4vmin; border-left: 0; border-bottom: 0; }
+.boot-corner.bl { bottom: 2.4vmin; left: 2.4vmin; border-right: 0; border-top: 0; }
+.boot-corner.br { bottom: 2.4vmin; right: 2.4vmin; border-left: 0; border-top: 0; }
+
+.boot-top {
+  position: absolute; top: 4vmin; left: 6vmin; right: 6vmin;
+  display: flex; justify-content: space-between; gap: 2vmin;
+  padding-bottom: 1vmin; border-bottom: 1px solid rgba(248, 0, 48, 0.4);
+  font-size: 0.85em; white-space: nowrap; clip-path: inset(0 100% 0 0);
+}
+.boot-tag { color: var(--ar); font-weight: 700; }
+.boot-node { color: var(--dim); }
+.boot-live { color: var(--cy); }
+
+.boot-stage { position: absolute; inset: 11vmin 6vmin 13vmin; display: grid; place-items: center; }
+.boot-brand { display: flex; flex-direction: column; align-items: center; gap: 2vmin; }
+.boot-emblem { width: 30vmin; height: 30vmin; overflow: visible; filter: drop-shadow(0 0 1.6vmin var(--ar-glow)); }
+.boot-emblem .ring { fill: none; stroke: var(--ar); stroke-width: 44; }
+.boot-emblem .trunk { fill: var(--ar); transform-box: fill-box; transform-origin: 50% 100%; transform: scaleY(0); }
+.boot-emblem .branch { stroke: var(--ar); stroke-width: 48; }
+.boot-emblem .seed { fill: var(--ar); transform-box: fill-box; transform-origin: center; transform: scale(0); }
+.boot-word {
+  display: flex; gap: 2.4vmin;
+  font-family: Bahnschrift, 'Segoe UI', sans-serif; font-weight: 700; font-stretch: condensed;
+  font-size: 7.5vmin; line-height: 1; color: var(--wh); text-shadow: 0 0 1.2vmin rgba(255, 255, 255, 0.35);
+}
+.boot-word span { display: inline-block; opacity: 0; }
+.boot-corp { color: var(--ar); font-size: 0.8em; letter-spacing: 0.32em; clip-path: inset(0 100% 0 0); white-space: nowrap; }
+
+.boot-project {
+  position: absolute; left: 0; right: 0; top: 37%; margin: 0 auto;
+  width: min(82vw, 760px); display: flex; flex-direction: column; align-items: center; gap: 1.6vmin; opacity: 0;
+}
+.boot-kicker { color: var(--ar); font-family: Bahnschrift, 'Segoe UI', sans-serif; font-weight: 600; font-size: 3vmin; letter-spacing: 0.9em; padding-left: 0.9em; }
+.boot-title {
+  position: relative; font-family: Bahnschrift, 'Segoe UI', sans-serif; font-weight: 700; font-stretch: condensed;
+  font-size: 13vmin; line-height: 0.95; letter-spacing: 0.08em; color: var(--wh);
+  text-shadow: 0 0 2vmin var(--ar-glow);
+}
+.boot-title::before, .boot-title::after { content: attr(data-text); position: absolute; inset: 0; mix-blend-mode: screen; pointer-events: none; }
+.boot-title::before { color: var(--ar); transform: translateX(-0.5vmin); animation: boot-slice 1.6s steps(1) infinite; }
+.boot-title::after { color: var(--cy); transform: translateX(0.5vmin); animation: boot-slice 1.2s steps(1) infinite reverse; }
+@keyframes boot-slice {
+  0%, 100% { clip-path: inset(0 0 100% 0); }
+  8% { clip-path: inset(12% 0 64% 0); }
+  16% { clip-path: inset(70% 0 8% 0); }
+  24% { clip-path: inset(0 0 100% 0); }
+  58% { clip-path: inset(40% 0 42% 0); }
+  64% { clip-path: inset(0 0 100% 0); }
+}
+.boot-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.2vmin; font-size: 0.78em; }
+.boot-tags span {
+  padding: 0.5vmin 1.4vmin; border: 1px solid rgba(244, 241, 238, 0.35); color: var(--dim);
+  clip-path: polygon(0 0, calc(100% - 1.2vmin) 0, 100% 1.2vmin, 100% 100%, 0 100%); opacity: 0;
+}
+.boot-tags .hot { background: var(--ar); border-color: var(--ar); color: #0a0002; font-weight: 700; }
+.boot-progress { width: 100%; margin-top: 1vmin; opacity: 0; }
+.boot-track { height: 1.2vmin; min-height: 6px; border: 1px solid rgba(248, 0, 48, 0.6); padding: 2px; clip-path: polygon(0 0, 100% 0, 100% 100%, 1.2vmin 100%, 0 calc(100% - 1.2vmin)); }
+.boot-fill { height: 100%; background: linear-gradient(90deg, var(--ar), #ff5a76); box-shadow: 0 0 1vmin var(--ar-glow); transform-origin: left; transform: scaleX(0); }
+.boot-meta { display: flex; justify-content: space-between; margin-top: 0.8vmin; font-size: 0.8em; }
+.boot-step { color: var(--cy); }
+.boot-pct { color: var(--ar); font-weight: 700; }
+
+.boot-log { position: absolute; left: 6vmin; bottom: 7vmin; font-size: 0.72em; line-height: 1.6; color: var(--dim); white-space: nowrap; }
+.boot-log div::before { content: '> '; color: var(--ar); }
+.boot-log b { color: var(--cy); font-weight: 400; }
+.boot-foot {
+  position: absolute; left: 6vmin; right: 6vmin; bottom: 3.6vmin; display: flex; justify-content: space-between;
+  font-size: 0.65em; color: rgba(244, 241, 238, 0.3); border-top: 1px solid rgba(248, 0, 48, 0.25); padding-top: 0.8vmin; opacity: 0;
+}
+.boot-hex { color: rgba(248, 0, 48, 0.5); }
+
+/* Panneau « NOW PLAYING » (radio de Cyberpunk 2077, photo de Tommy) : dessiné à la taille de la photo (615 × 243 px),
+   puis mis à l'échelle par app.js (--np-k) pour garder toutes les proportions. Couleurs mesurées sur la photo :
+   rouge du texte #F3706E, cyan des touches #94E6EF, cadres #6F393B, fond #1B0C0F. */
+.np {
+  --np-red: #f3706e;
+  --np-red-dim: rgb(243 112 110 / 0.42);
+  --np-line: rgb(150 60 62 / 0.55);
+  --np-cyan: #94e6ef;
+  --np-cyan-line: #83bfc3;
+  position: absolute;
+  top: 1.2vw;
+  right: 1.2vw;
+  z-index: 3;
+  width: 615px;
+  height: 243px;
+  transform: scale(var(--np-k, 0.6));
+  transform-origin: top right;
+  pointer-events: none;
+  font-family: Bahnschrift, "Segoe UI", sans-serif;
+  font-stretch: semi-condensed;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.35s ease, visibility 0s linear 0.35s;
+  /* Fond sombre rougeâtre de la photo (#1B0C09), fondu sur les bords pour se poser sur la matrice. */
+  background: radial-gradient(ellipse 70% 75% at 55% 50%, rgb(27 12 9 / 0.93) 55%, rgb(27 12 9 / 0.75) 80%, rgb(27 12 9 / 0) 100%);
+}
+.np.on { opacity: 1; visibility: visible; transition: opacity 0.2s ease; }
+.np.on .np-frame, .np.on .np-info { animation: np-in 0.45s steps(6, end) both; }
+.np.on .np-info { animation-delay: 0.08s; }
+@keyframes np-in {
+  0% { clip-path: inset(0 100% 0 0); filter: brightness(2.2); }
+  60% { clip-path: inset(0 0 0 0); filter: brightness(1.5); }
+  100% { clip-path: inset(0 0 0 0); filter: none; }
+}
+.np-frame {
+  position: absolute;
+  left: 10px;
+  top: 20px;
+  width: 224px;
+  height: 201px;
+}
+/* Rail épais à gauche, coin bas-gauche coupé. */
+.np-rail {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 10px;
+  height: 205px;
+  border: 1px solid var(--np-line);
+  border-right: 0;
+  background: rgb(110 40 40 / 0.18);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 calc(100% - 8px));
+}
+.np-box {
+  position: absolute;
+  left: 11px;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  border: 1px solid var(--np-line);
+  background:
+    radial-gradient(circle, rgb(150 70 70 / 0.35) 0.6px, transparent 1px) 13px 13px / 27px 27px,
+    rgb(27 12 15 / 0.94);
+  box-shadow: inset 0 0 18px rgb(0 0 0 / 0.6);
+  overflow: hidden;
+}
+.np-cover {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 150px;
+  height: 150px;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 0 3px rgb(135 243 255 / 0.65)) drop-shadow(0 0 9px rgb(135 243 255 / 0.25));
+}
+.np-meta {
+  position: absolute;
+  left: 9px;
+  bottom: 6px;
+  margin: 0;
+  font: 500 5.4px/1.35 Consolas, monospace;
+  letter-spacing: 0.3px;
+  color: rgb(150 110 100 / 0.75);
+  white-space: pre;
+}
+.np-info {
+  position: absolute;
+  left: 252px;
+  top: 0;
+  right: 18px;
+  bottom: 0;
+}
+.np-head {
+  position: absolute;
+  left: 2px;
+  top: 7px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  color: var(--np-red-dim);
+}
+.np-head::after { /* trait sous l'en-tête, jusqu'au bord droit */
+  content: "";
+  position: absolute;
+  left: -2px;
+  top: 13px;
+  width: 345px;
+  height: 1px;
+  background: var(--np-line);
+}
+.np-title {
+  position: absolute;
+  left: 2px;
+  top: 38px;
+  right: 0;
+  max-height: 96px;
+  overflow: hidden;
+  font-size: 23px;
+  font-weight: 600;
+  line-height: 32px;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  color: var(--np-red);
+  text-shadow: 0 0 6px rgb(243 112 110 / 0.35);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+.np-title.swap { animation: np-swap 0.4s steps(5, end); }
+@keyframes np-swap {
+  0% { opacity: 0; transform: translateX(6px); }
+  40% { opacity: 1; transform: translateX(-2px); filter: brightness(1.8); }
+  100% { opacity: 1; transform: none; filter: none; }
+}
+.np-vol {
+  position: absolute;
+  left: 2px;
+  right: 3px;
+  top: 172px;
+  height: 31px;
+  display: flex;
+  align-items: center;
+}
+.np-vol::after { /* trait du bas */
+  content: "";
+  position: absolute;
+  left: -2px;
+  top: 46px;
+  width: 345px;
+  height: 1px;
+  background: var(--np-line);
+}
+.np-vol-label {
+  flex: 1;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  color: var(--np-red);
+}
+.np-key {
+  width: 29px;
+  height: 29px;
+  padding: 0;
+  border: 1.5px solid var(--np-cyan-line);
+  background: rgb(10 30 34 / 0.35);
+  color: var(--np-cyan);
+  font: 500 15px Bahnschrift, sans-serif;
+  pointer-events: auto;
+  cursor: pointer;
+  box-shadow: 0 0 5px rgb(131 191 195 / 0.25);
+}
+.np-key:active { background: rgb(148 230 239 / 0.25); }
+.np-pct {
+  width: 76px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--np-cyan);
+  text-shadow: 0 0 6px rgb(148 230 239 / 0.4);
+}
+@media (prefers-reduced-motion: reduce) { .np.on .np-frame, .np.on .np-info, .np-title.swap { animation: none; } }

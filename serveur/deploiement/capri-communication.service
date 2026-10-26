@@ -1,0 +1,18 @@
+[Unit]
+Description=CAPRI - communication (appels, SMS, MMS)
+After=network-online.target capri-centrale.service
+Wants=network-online.target
+
+[Service]
+User=capri
+WorkingDirectory=/opt/capri/serveur
+ExecStart=/usr/bin/node communication/index.js
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

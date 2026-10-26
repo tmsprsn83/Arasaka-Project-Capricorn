@@ -1,0 +1,14 @@
+node_modules/
+out/
+dist/
+*.log
+
+# Jamais publiés : secrets, données, réglages locaux
+.env
+serveur/donnees/
+.claude/
+
+# Gardés en local : images de référence, brouillons, vidéos
+IMAGE_DE_REFERENCE/
+Nouveau dossier/
+videos/

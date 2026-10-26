@@ -1,0 +1,15 @@
+# Caddy (HTTPS automatique) devant les deux services. Seuls /api (CAPRI du PC) et /twilio (webhooks) sont publics ;
+# /interne et /sante restent accessibles uniquement depuis le serveur.
+capri.exemple.fr {
+	handle /api/* {
+		reverse_proxy 127.0.0.1:8710 {
+			flush_interval -1
+		}
+	}
+	handle /twilio/* {
+		reverse_proxy 127.0.0.1:8711
+	}
+	handle {
+		respond 404
+	}
+}

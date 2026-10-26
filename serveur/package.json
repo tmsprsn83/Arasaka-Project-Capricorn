@@ -1,0 +1,18 @@
+{
+  "name": "capri-serveur",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CAPRI sur le VPS : centrale (cerveau, mémoire, réveils) et communication (appels, SMS, MMS).",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "centrale": "node centrale/index.js",
+    "communication": "node communication/index.js",
+    "test": "node --test centrale/memoire.test.js communication/twilio.test.js",
+    "verifier": "node outils/verifier-telephone.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.3.0"
+  }
+}

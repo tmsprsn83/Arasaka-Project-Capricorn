@@ -1,0 +1,19 @@
+[Unit]
+Description=CAPRI - centrale (cerveau, mémoire, réveils)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=capri
+WorkingDirectory=/opt/capri/serveur
+ExecStart=/usr/bin/node centrale/index.js
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/capri/serveur/donnees
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

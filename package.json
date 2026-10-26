@@ -1,0 +1,20 @@
+{
+  "name": "capricorn",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CAPRI : agent vocal joueur, cerveau Claude Code, mémoire Obsidian.",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "demarrage": "electron tools/demarrage.cjs",
+    "demarrage:retirer": "electron tools/demarrage.cjs --retirer",
+    "lumiere": "node tools/lumiere.cjs",
+    "test": "node --test src/tags.test.js src/reveils.test.js src/sse.test.js"
+  },
+  "devDependencies": {
+    "ag-psd": "^33.0.0",
+    "electron": "32.3.3",
+    "motion": "^14.6.0",
+    "pngjs": "^7.0.0"
+  }
+}

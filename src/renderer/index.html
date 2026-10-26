@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+  <title>CAPRI</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="bar" id="bar">
+    <span class="brand">CAPRI<span class="dot"></span></span>
+    <span class="status" id="status">en ligne</span>
+    <button type="button" class="win" id="notif" title="Son des notifications (activé / coupé)">♪</button>
+    <button type="button" class="win" id="hud" title="Messages sur l'écran principal (affichés / cachés)">⧉</button>
+    <button type="button" class="win" id="chat" title="Afficher ou cacher le tchat">⌨</button>
+    <button type="button" class="win" id="new" title="Nouvelle conversation">↺</button>
+    <button type="button" class="win" id="top" title="Toujours au premier plan">▲</button>
+    <button type="button" class="win" id="full" title="Plein écran (F11, Échap pour sortir)">⛶</button>
+    <button type="button" class="win" id="min" title="Réduire">–</button>
+    <button type="button" class="win close" id="close" title="Fermer">×</button>
+  </header>
+  <main>
+    <div id="face" class="face"></div>
+    <!-- Musique en cours (musique.js) : panneau « NOW PLAYING » de la radio de Cyberpunk 2077, en haut à droite. -->
+    <aside id="np" class="np" aria-live="polite">
+      <div class="np-frame">
+        <i class="np-rail"></i>
+        <div class="np-box">
+          <canvas id="np-cover" class="np-cover" width="300" height="300"></canvas>
+          <pre id="np-meta" class="np-meta"></pre>
+        </div>
+      </div>
+      <div class="np-info">
+        <div class="np-head">NOW PLAYING</div>
+        <div id="np-title" class="np-title"></div>
+        <div class="np-vol">
+          <span class="np-vol-label">VOLUME</span>
+          <button type="button" id="np-down" class="np-key" title="Baisser le volume">A</button>
+          <b id="np-pct" class="np-pct">100%</b>
+          <button type="button" id="np-up" class="np-key" title="Monter le volume">D</button>
+        </div>
+      </div>
+    </aside>
+    <section id="bubble" class="bubble" hidden>
+      <p id="said"></p>
+    </section>
+  </main>
+  <form id="form" class="ask">
+    <input id="input" autocomplete="off" spellcheck="false" placeholder="Parle-moi… (maintiens ta touche VoiceInput)" />
+    <button type="submit" aria-label="Envoyer">➤</button>
+  </form>
+  <!-- Démarrage Arasaka façon Cyberpunk 2077 (boot.js, animé par Motion), par-dessus tout jusqu'à l'apparition de CAPRI. -->
+  <div id="boot" class="boot" aria-hidden="true">
+    <canvas class="boot-noise"></canvas>
+    <div class="boot-power"></div>
+    <div class="boot-screen">
+      <i class="boot-corner tl"></i><i class="boot-corner tr"></i><i class="boot-corner bl"></i><i class="boot-corner br"></i>
+      <header class="boot-top">
+        <span class="boot-tag">ARASAKA // RÉSEAU SÉCURISÉ</span>
+        <span class="boot-node">NŒUD TKY-07 · SUBNET 0x7F3A</span>
+        <span class="boot-live">● LIAISON</span>
+      </header>
+      <div class="boot-stage">
+        <div class="boot-brand">
+          <!-- Emblème Arasaka, d'après « Arasaka logo lite » (Wikimedia Commons, CC0), géométrie relevée au pixel. -->
+          <svg class="boot-emblem" viewBox="455 454 651 651">
+            <circle class="ring" cx="780.5" cy="779" r="295.5" />
+            <rect class="trunk" x="757" y="640" width="48" height="404" />
+            <line class="branch" x1="780.5" y1="916.5" x2="618" y2="754" />
+            <line class="branch" x1="780.5" y1="916.5" x2="943" y2="754" />
+            <circle class="seed" cx="781" cy="616" r="99" />
+            <circle class="seed" cx="618" cy="754" r="99" />
+            <circle class="seed" cx="943" cy="754" r="99" />
+          </svg>
+          <div class="boot-word"><span>A</span><span>R</span><span>A</span><span>S</span><span>A</span><span>K</span><span>A</span></div>
+          <div class="boot-corp">ARASAKA CORPORATION — DIVISION DES SYSTÈMES NEURAUX</div>
+        </div>
+        <div class="boot-project">
+          <div class="boot-kicker">PROJET</div>
+          <div class="boot-title" data-text="CAPRICORN">CAPRICORN</div>
+          <div class="boot-tags"><span class="hot">CLASSIFIÉ</span><span>ACCÈS NIVEAU 7</span><span>C.A.P.R.I. — PERSONNALITÉ NEURALE</span></div>
+          <div class="boot-progress">
+            <div class="boot-track"><div class="boot-fill"></div></div>
+            <div class="boot-meta"><span class="boot-step">INITIALISATION</span><span class="boot-pct">000%</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="boot-log"></div>
+      <footer class="boot-foot"><span>© 2077 ARASAKA CORPORATION · TOUS DROITS RÉSERVÉS</span><span class="boot-hex"></span></footer>
+    </div>
+  </div>
+  <script src="motion.js"></script>
+  <script src="boot.js"></script>
+  <script src="../tags.js"></script>
+  <script src="visage-plat.js"></script>
+  <script src="visage-visiere.js"></script>
+  <script src="visage-sprites.js"></script>
+  <script src="capri.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
