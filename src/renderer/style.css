@@ -343,7 +343,7 @@ body.chat-hidden:not(.chat-peek) .ask { max-height: 0; padding-bottom: 0; opacit
   --np-cyan: #94e6ef;
   --np-cyan-line: #83bfc3;
   position: absolute;
-  top: 1.2vw;
+  top: calc(2.4vw + 34px); /* sous le rappel « WIN + MAJ + F » */
   right: 1.2vw;
   z-index: 3;
   width: 615px;
@@ -515,3 +515,32 @@ body.chat-hidden:not(.chat-peek) .ask { max-height: 0; padding-bottom: 0; opacit
   text-shadow: 0 0 6px rgb(148 230 239 / 0.4);
 }
 @media (prefers-reduced-motion: reduce) { .np.on .np-frame, .np.on .np-info, .np-title.swap { animation: none; } }
+
+/* Ce qu'elle écrit n'est plus affiché en bas de la fenêtre (Tommy) : la conversation se lit dans le panneau des
+   messages (Win + Maj + F). app.js remplit toujours la bulle, pour le calque et le rythme de la parole. */
+.bubble { display: none !important; }
+
+/* Rappel du raccourci des messages, en haut à droite : touches cadrées cyan et mot rouge, comme les touches A / D
+   du NOW PLAYING (mêmes couleurs, mesurées sur la photo de la radio). Cliquable : ouvre le panneau. */
+.keys {
+  position: absolute; top: 1.2vw; right: 1.2vw; z-index: 4;
+  display: flex; align-items: center; gap: 5px; padding: 4px 6px 4px 8px;
+  font: 600 clamp(12px, 1.2vw, 20px)/1 Bahnschrift, 'Segoe UI', sans-serif; font-stretch: semi-condensed;
+  color: #f3706e; letter-spacing: 0.04em;
+  background: radial-gradient(ellipse 80% 90% at 55% 50%, rgb(27 12 9 / 0.85) 55%, rgb(27 12 9 / 0) 100%);
+  border: none; cursor: pointer; opacity: 0.85;
+  transition: opacity 0.2s, filter 0.2s;
+}
+.keys:hover { opacity: 1; filter: brightness(1.25); }
+.keys kbd {
+  min-width: 1.9em; height: 1.9em; padding: 0 0.4em; display: inline-flex; align-items: center; justify-content: center;
+  font: inherit; color: #94e6ef; border: 1.5px solid #83bfc3; background: rgb(10 30 34 / 0.35);
+  text-shadow: 0 0 6px rgb(148 230 239 / 0.35);
+}
+.keys i { font-style: normal; color: rgb(148 230 239 / 0.55); }
+.keys span { margin-left: 0.45em; text-shadow: 0 0 6px rgb(243 112 110 / 0.35); }
+/* Petit grésillement à l'arrivée, comme le NOW PLAYING. */
+.keys { animation: np-in 0.45s steps(6, end) both; }
+/* La barre de titre (souris sur la fenêtre) couvre le haut : le rappel glisse juste en dessous pour rester cliquable. */
+.keys { transition: opacity 0.2s, filter 0.2s, translate 0.25s cubic-bezier(0.2, 0.8, 0.2, 1); }
+body.ui-on .keys { translate: 0 44px; }

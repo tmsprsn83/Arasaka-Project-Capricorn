@@ -5,6 +5,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
   <title>CAPRI — calque</title>
   <link rel="stylesheet" href="overlay.css" />
+  <link rel="stylesheet" href="messages.css" />
 </head>
 <body>
   <!-- Calque transparent de l'écran principal : nouveau message de CAPRI, dans le style de l'appel entrant de
@@ -40,7 +41,54 @@
       </div>
     </div>
   </div>
+  <!-- Panneau des messages (Win + Maj + F), comme l'écran « MESSAGES » du téléphone de V dans Cyberpunk 2077 :
+       bulles de CAPRI cyan à gauche, celles de Tommy vertes à droite, réponse en bas. Animé par messages.js. -->
+  <section id="msg" class="msg" hidden aria-label="Messages de CAPRI">
+    <div class="msg-glitch" aria-hidden="true"></div>
+    <!-- Le contact, repris tel quel de la carte d'appel entrant (mêmes classes, overlay.css). -->
+    <div class="msg-contact" aria-hidden="true">
+      <div class="hud-side">
+        <div class="hud-micro"><i>NET_ID 7F3A</i><i>SIG.LVL 98</i><i>ENC AES256</i></div>
+        <svg class="hud-phone" viewBox="0 0 24 30">
+          <rect x="3" y="8" width="11" height="20" rx="1.6" />
+          <path d="M5.5 11 h6 v6 h-6 z" />
+          <path d="M6 20 h1 M8 20 h1 M10 20 h1 M6 22.5 h1 M8 22.5 h1 M10 22.5 h1 M6 25 h1 M8 25 h1 M10 25 h1" />
+          <path d="M15.5 6 a3.5 3.5 0 0 1 3.5 3.5 M15.5 2.5 a7 7 0 0 1 7 7" />
+        </svg>
+      </div>
+      <div class="hud-portrait">
+        <i class="hud-ghost g5"></i><i class="hud-ghost g4"></i><i class="hud-ghost g3"></i>
+        <i class="hud-ghost g2"></i><i class="hud-ghost g1"></i>
+        <div class="hud-card">
+          <i class="hud-tab"></i>
+          <div class="hud-pic"><img src="visage/portrait.png" alt="" /><span class="hud-scan"></span></div>
+          <div class="hud-pic-name">CAPRI</div>
+        </div>
+      </div>
+    </div>
+    <div class="msg-code">ARS_CPRCN_800095</div>
+    <header class="msg-head">
+      <span class="msg-seg"><svg class="msg-mail" viewBox="0 0 24 18" aria-hidden="true"><rect x="1" y="1.5" width="22" height="15" rx="1" /><path d="M2.5 3 L12 10.2 L21.5 3" /></svg><span class="msg-title">MESSAGES</span><i class="u"></i></span>
+      <span class="msg-sep">›</span>
+      <span class="msg-seg"><span class="msg-who">CAPRI</span><i class="u"></i></span>
+      <span class="msg-fill"><i class="red"></i><span class="msg-ver">VER_ME4676</span></span>
+    </header>
+    <div class="msg-body">
+      <div id="msg-list" class="msg-list" tabindex="-1"></div>
+      <i class="msg-track" aria-hidden="true"><i class="msg-thumb"></i></i>
+    </div>
+    <form id="msg-form" class="msg-reply" autocomplete="off">
+      <label class="msg-field"><input id="msg-input" maxlength="2000" placeholder="Répondre à CAPRI…" spellcheck="false" /></label>
+      <button type="submit" class="msg-go" title="Envoyer"><svg viewBox="0 0 20 20" aria-hidden="true"><circle class="disc" cx="10" cy="10" r="9" /><path class="sym" d="M6.6 6.6 L13.4 13.4 M13.4 6.6 L6.6 13.4" /></svg></button>
+    </form>
+    <div class="msg-foot-rule"></div>
+    <div class="msg-foot">
+      <button type="button" class="msg-keyhint" id="msg-send" title="Entrée"><svg class="icon" viewBox="0 0 20 20" aria-hidden="true"><circle class="disc" cx="10" cy="10" r="9" /><path class="sym" d="M10 5.4 L14.2 12.6 H5.8 Z" /></svg>ENVOYER</button>
+      <button type="button" class="msg-keyhint" id="msg-close" title="Échap"><svg class="icon" viewBox="0 0 20 20" aria-hidden="true"><circle class="disc" cx="10" cy="10" r="9" /><circle class="sym" cx="10" cy="10" r="4.2" /></svg>FERMER</button>
+    </div>
+  </section>
   <script src="motion.js"></script>
+  <script src="messages.js"></script>
   <script src="overlay.js"></script>
 </body>
 </html>

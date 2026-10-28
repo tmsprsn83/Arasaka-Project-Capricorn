@@ -1,0 +1,182 @@
+/* Panneau des messages (Win + Maj + F), relevé sur trois écrans « MESSAGES › … » du téléphone de V (River Ward,
+   Unknown Number, Panam Palmer) :
+   - à gauche, la carte rouge du contact, la même que celle de l'appel entrant (cadres empilés, téléphone) ;
+   - code rouge minuscule, « ✉ MESSAGES › NOM » cyan pâle, chaque partie soulignée d'un trait cyan épais et
+     lumineux, puis un fin filet rouge jusqu'au bord avec « VER_… » au-dessus ;
+   - cadre sombre translucide au bord gris, coin bas droit coupé, filet rouge de défilement contre le bord droit ;
+   - bulles du contact : ardoise sombre, bord cyan, coin haut gauche coupé, pointe en biais en bas à gauche, coin bas
+     droit coupé ; les miennes : vert d'eau, texte cyan-vert, coin haut droit coupé, pointe en bas à droite, coin bas
+     gauche coupé ; la réponse a la forme des miennes, avec la croix ronde lumineuse ;
+   - filet rouge et « △ … ○ … » en bas, pastilles cyan, mots rouges.
+   Les formes sont tracées en clip-path sur ::before (bord) et ::after (fond), qui débordent sous la boîte pour la
+   pointe : --t hauteur de la pointe, --c coin coupé du bas, --k coin coupé du haut, --b épaisseur du bord. */
+@font-face { font-family: 'Rajdhani'; font-weight: 500; src: url('fonts/Rajdhani-Medium.ttf') format('truetype'); }
+@font-face { font-family: 'Rajdhani'; font-weight: 600; src: url('fonts/Rajdhani-SemiBold.ttf') format('truetype'); }
+
+.msg {
+  --m-cyan: #5ee6e6;
+  --m-cyan-pale: #b9f4f1;
+  --m-cyan-glow: rgba(94, 230, 230, 0.55);
+  --m-red: #ff4f58;
+  --m-red-dim: rgba(255, 79, 88, 0.75);
+  --fs: clamp(15px, 1vw, 26px);
+  position: absolute;
+  left: 12.5vw;
+  top: 8vh;
+  width: clamp(460px, 28vw, 680px);
+  height: 74vh;
+  display: flex;
+  flex-direction: column;
+  font-family: Rajdhani, Bahnschrift, sans-serif;
+  font-size: var(--fs);
+  font-weight: 500;
+  color: var(--m-cyan-pale);
+  user-select: text;
+  /* Légèrement tourné vers l'écran, comme le téléphone de V. */
+  transform: perspective(90vw) rotateY(9deg);
+  transform-origin: left center;
+}
+.msg[hidden] { display: none; }
+/* Voile derrière le panneau, comme derrière le texte des notifications (overlay.css, .hud-text::before) : sombre,
+   semi-transparent, bords fondus et flous, pour le lire par-dessus n'importe quelle fenêtre. Un calque transparent ne
+   peut pas flouter le bureau lui-même (backdrop-filter ne voit que la page). */
+.msg::before {
+  content: ''; position: absolute; z-index: -1; inset: -2.5em -2.5em -2em -3em; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 50%, rgba(8, 4, 14, 0.62) 55%, rgba(8, 4, 14, 0) 100%);
+  filter: blur(1vw);
+}
+
+/* Carte du contact : celle de l'appel entrant (classes hud-*, overlay.css), à gauche de l'en-tête, comme sur les
+   écrans Unknown Number et Panam Palmer. */
+.msg-contact { position: absolute; right: calc(100% + 0.8vw); top: -1.4em; display: flex; align-items: flex-start; pointer-events: none; }
+/* Le panneau est déjà incliné : la carte ne pivote qu'à moitié de celle de l'appel entrant. */
+.msg-contact .hud-portrait { width: 7.2vw; height: 9.2vw; margin: 0.4vw 0 0 0.4vw; transform: perspective(13vw) rotateY(-14deg); transform-origin: 100% 0; }
+/* Calque de glitch : tranches décalées en rouge / cyan, allumé un instant par messages.js. */
+.msg-glitch {
+  position: absolute; inset: 0; z-index: 3; pointer-events: none; opacity: 0; mix-blend-mode: screen;
+  background:
+    linear-gradient(90deg, transparent 0 8%, rgba(255, 79, 88, 0.35) 8% 9%, transparent 9% 63%, rgba(94, 230, 230, 0.35) 63% 64.5%, transparent 64.5%),
+    repeating-linear-gradient(0deg, transparent 0 22px, rgba(94, 230, 230, 0.12) 22px 25px, transparent 25px 61px, rgba(255, 79, 88, 0.14) 61px 63px);
+}
+
+.msg-code { font: 500 0.55em/1 Consolas, monospace; color: var(--m-red-dim); letter-spacing: 0.02em; margin: 0 0 0.4em 0.1em; }
+
+/* En-tête : chaque partie porte son trait cyan, le filet rouge file ensuite jusqu'au bord. */
+.msg-head { display: flex; align-items: flex-end; font-size: 1.55em; font-weight: 600; line-height: 1; color: var(--m-cyan-pale); text-shadow: 0 0 0.35em rgba(120, 240, 235, 0.45); }
+.msg-seg { position: relative; display: inline-flex; align-items: center; gap: 0.18em; padding: 0 0.12em 0.3em 0; }
+.msg-head .u { position: absolute; left: 0; right: 0; bottom: 0; height: 0.13em; min-height: 3px; background: var(--m-cyan); box-shadow: 0 0 0.35em var(--m-cyan-glow); transform-origin: left; }
+.msg-seg:first-child { padding-right: 0.4em; }
+.msg-mail { width: 0.82em; height: 0.62em; margin-bottom: 0.05em; }
+.msg-mail rect { fill: var(--m-cyan-pale); }
+.msg-mail path { fill: none; stroke: #20363b; stroke-width: 2; }
+.msg-sep { align-self: center; font-size: 0.75em; padding: 0 0.35em 0.3em 0.1em; opacity: 0.9; }
+.msg-fill { position: relative; flex: 1; align-self: stretch; margin-left: 0.25em; }
+.msg-fill .red { position: absolute; left: 0; right: 0; bottom: 0.02em; height: 1.5px; background: var(--m-red-dim); box-shadow: 0 0 0.3em rgba(255, 79, 88, 0.4); transform-origin: left; }
+.msg-ver { position: absolute; right: 0; bottom: 0.35em; font: 500 0.3em/1 Consolas, monospace; color: var(--m-red-dim); text-shadow: none; }
+
+/* Cadre des messages : sombre et translucide, bord gris pâle, coin bas droit coupé. */
+.msg-body { position: relative; flex: 1; min-height: 0; display: flex; margin-top: 0.9em; isolation: isolate; }
+.msg-body::before, .msg-body::after { content: ''; position: absolute; inset: 0; z-index: -1; }
+.msg-body::before { background: rgba(170, 190, 195, 0.22); clip-path: polygon(0 0, 100% 0, 100% calc(100% - 1.4em), calc(100% - 1.4em) 100%, 0 100%); }
+.msg-body::after { background: rgba(14, 20, 24, 0.5); clip-path: polygon(1px 1px, calc(100% - 1px) 1px, calc(100% - 1px) calc(100% - 1.4em - 0.4px), calc(100% - 1.4em - 0.4px) calc(100% - 1px), 1px calc(100% - 1px)); }
+.msg-list {
+  flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0.9em 1.5em 1.2em 0.9em;
+  display: flex; flex-direction: column; gap: 0.55em; scrollbar-width: none; outline: none;
+}
+.msg-list::-webkit-scrollbar { display: none; }
+.msg-track { position: absolute; right: -0.15em; top: 0.4em; bottom: 1.6em; width: 2px; background: rgba(255, 79, 88, 0.7); box-shadow: 0 0 0.3em rgba(255, 79, 88, 0.4); }
+.msg-thumb { position: absolute; left: -1.5px; width: 5px; top: 0; height: 30%; background: var(--m-red); box-shadow: 0 0 0.5em var(--m-red); }
+
+/* Bulles. */
+.bubble-m, .msg-field {
+  --t: 0.62em; --c: 0.55em; --k: 0.5em; --b: 1.5px;
+  position: relative; isolation: isolate; margin-bottom: var(--t);
+}
+.bubble-m {
+  max-width: 86%; padding: 0.45em 0.8em 0.5em; font-size: 1.25em; line-height: 1.36; letter-spacing: 0.01em;
+  /* Aberration de l'écran du jeu : franges rouge et cyan d'un demi-pixel, petite lueur. */
+  text-shadow: -0.6px 0 rgba(255, 60, 80, 0.35), 0.6px 0 rgba(80, 255, 255, 0.35), 0 0 0.4em rgba(150, 240, 235, 0.25);
+  white-space: pre-wrap; overflow-wrap: anywhere; flex-shrink: 0;
+}
+.bubble-m::before, .bubble-m::after, .msg-field::before, .msg-field::after {
+  content: ''; position: absolute; inset: 0 0 calc(-1 * var(--t)) 0; z-index: -1; pointer-events: none;
+}
+.bubble-m.capri { align-self: flex-start; color: #e3eeec; filter: drop-shadow(0 0 0.25em rgba(94, 230, 230, 0.28)); }
+.bubble-m.capri::before {
+  background: #5fd6d2;
+  clip-path: polygon(var(--k) 0, 100% 0, 100% calc(100% - var(--t) - var(--c)), calc(100% - var(--c)) calc(100% - var(--t)), 1.1em calc(100% - var(--t)), 0 100%, 0 var(--k));
+}
+.bubble-m.capri::after {
+  background: rgba(36, 45, 50, 0.9);
+  clip-path: polygon(calc(var(--k) + 0.6px) var(--b), calc(100% - var(--b)) var(--b), calc(100% - var(--b)) calc(100% - var(--t) - var(--c) - 0.6px), calc(100% - var(--c) - 0.6px) calc(100% - var(--t) - var(--b)), calc(1.1em - 0.4px) calc(100% - var(--t) - var(--b)), var(--b) calc(100% - 3.6px), var(--b) calc(var(--k) + 0.6px));
+}
+.bubble-m.moi, .msg-field { color: #a6f7e2; }
+.bubble-m.moi { align-self: flex-end; filter: drop-shadow(0 0 0.25em rgba(110, 240, 190, 0.3)); }
+.bubble-m.moi::before, .msg-field::before {
+  background: #7ae9c2;
+  clip-path: polygon(0 0, calc(100% - var(--k)) 0, 100% var(--k), 100% 100%, calc(100% - 1.1em) calc(100% - var(--t)), var(--c) calc(100% - var(--t)), 0 calc(100% - var(--t) - var(--c)));
+}
+.bubble-m.moi::after, .msg-field::after {
+  background: rgba(52, 128, 104, 0.88);
+  clip-path: polygon(var(--b) var(--b), calc(100% - var(--k) - 0.6px) var(--b), calc(100% - var(--b)) calc(var(--k) + 0.6px), calc(100% - var(--b)) calc(100% - 3.6px), calc(100% - 1.1em + 0.4px) calc(100% - var(--t) - var(--b)), calc(var(--c) + 0.6px) calc(100% - var(--t) - var(--b)), var(--b) calc(100% - var(--t) - var(--c) - 0.6px));
+}
+.bubble-m.live .caret { display: inline-block; width: 0.42em; height: 0.9em; margin-left: 0.1em; vertical-align: -0.1em; background: var(--m-cyan); animation: msg-blink 0.9s steps(1) infinite; }
+.msg-empty { align-self: center; margin-top: 2em; font-size: 1em; opacity: 0.5; }
+
+/* CAPRI écrit : trois points. */
+.typing { display: inline-flex; gap: 0.3em; padding: 0.2em 0; }
+.typing i { width: 0.4em; height: 0.4em; background: var(--m-cyan); box-shadow: 0 0 0.4em var(--m-cyan-glow); animation: msg-dot 1s infinite ease-in-out; }
+.typing i:nth-child(2) { animation-delay: 0.15s; }
+.typing i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes msg-dot { 0%, 80%, 100% { opacity: 0.25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-0.25em); } }
+@keyframes msg-blink { 50% { opacity: 0; } }
+
+/* Réponse : un choix de dialogue vert, à droite, la croix ronde lumineuse à côté. */
+.msg-reply { display: flex; align-items: center; justify-content: flex-end; gap: 0.5em; margin-top: 0.8em; padding-right: 0.2em; }
+.msg-field { display: block; width: 74%; filter: drop-shadow(0 0 0.25em rgba(110, 240, 190, 0.25)); cursor: text; }
+.msg-field::after { background: rgba(26, 72, 60, 0.85); transition: background 0.2s; }
+.msg-field:focus-within::after { background: rgba(52, 128, 104, 0.88); }
+.msg-field input {
+  display: block; width: 100%; font: inherit; font-size: 1.2em; color: #a6f7e2; background: none; border: none; outline: none;
+  padding: 0.38em 0.75em 0.42em; caret-color: #a6f7e2;
+}
+.msg-field input::placeholder { color: rgba(166, 247, 226, 0.5); }
+.msg-go { flex: 0 0 auto; width: 1.45em; height: 1.45em; margin-bottom: 0.5em; padding: 0; border: none; background: none; cursor: pointer; filter: drop-shadow(0 0 0.3em var(--m-cyan)); }
+.msg-go svg { width: 100%; height: 100%; display: block; }
+
+/* Bas : filet rouge, pastilles cyan lumineuses, mots rouges. */
+.msg-go .disc, .msg-keyhint .disc { fill: #c4f7f8; }
+.msg-go .sym, .msg-keyhint .sym { fill: none; stroke: #1d4c55; stroke-width: 1.8; }
+.msg-go:hover .disc, .msg-keyhint:hover .disc { fill: #fff; }
+.msg-foot-rule { height: 1.5px; margin: 1.1em 0 0.8em; background: var(--m-red-dim); box-shadow: 0 0 0.3em rgba(255, 79, 88, 0.4); transform-origin: left; }
+.msg-foot { display: flex; justify-content: flex-end; gap: 1.3em; padding-right: 0.2em; }
+.msg-keyhint {
+  display: inline-flex; align-items: center; gap: 0.35em; padding: 0; border: none; background: none; cursor: pointer;
+  font: 600 1.05em/1 Rajdhani, Bahnschrift, sans-serif; letter-spacing: 0.03em; color: var(--m-red); text-shadow: 0 0 0.4em rgba(255, 79, 88, 0.45);
+}
+.msg-keyhint .icon { width: 1.25em; height: 1.25em; filter: drop-shadow(0 0 0.3em var(--m-cyan)); }
+.msg-keyhint:hover { color: #ff858b; }
+
+/* Glitch latéral, le même que celui de la fenêtre de CAPRI (style.css, glitch-fx) : le panneau saute de côté, couches
+   rouge et verte décalées à gauche et à droite, tranches déchirées. « translate » plutôt que « transform », pour garder
+   son inclinaison ; les découpes débordent à gauche et en haut pour garder la carte du contact. messages.js pose
+   glitch-fx (et doux pour les petits sursauts, sans tranches). */
+.msg.glitch-fx { --g: 0.55; animation: msg-glitch-fx 0.6s steps(1) both; }
+.msg.glitch-fx.doux { --g: 0.3; animation-name: msg-glitch-doux; }
+@keyframes msg-glitch-fx {
+  0%   { translate: calc(var(--g) * 1.1vw) 0; clip-path: inset(10% -3em 55% -16em); filter: drop-shadow(calc(var(--g) * -0.6vw) 0 rgb(248 0 48 / 0.8)) drop-shadow(calc(var(--g) * 0.6vw) 0 rgb(0 255 102 / 0.6)); }
+  15%  { translate: calc(var(--g) * -1.4vw) calc(var(--g) * 0.3vh); clip-path: inset(45% -3em 18% -16em); filter: drop-shadow(calc(var(--g) * 0.7vw) 0 rgb(248 0 48 / 0.8)) drop-shadow(calc(var(--g) * -0.7vw) 0 rgb(0 255 102 / 0.6)); }
+  30%  { translate: calc(var(--g) * 0.6vw) calc(var(--g) * -0.4vh); clip-path: inset(-8em -3em -3em -16em); filter: hue-rotate(80deg) saturate(1.8); }
+  45%  { translate: calc(var(--g) * -0.8vw) 0; clip-path: inset(68% -3em 4% -16em); filter: drop-shadow(calc(var(--g) * -0.5vw) 0 rgb(248 0 48 / 0.8)); }
+  60%  { translate: calc(var(--g) * 0.9vw) 0; clip-path: inset(-8em -3em 30% -16em); filter: drop-shadow(calc(var(--g) * 0.5vw) 0 rgb(0 255 102 / 0.6)); }
+  80%  { translate: calc(var(--g) * 0.25vw) 0; clip-path: inset(-8em -3em -3em -16em); filter: none; }
+  100% { translate: none; clip-path: inset(-8em -3em -3em -16em); filter: none; }
+}
+@keyframes msg-glitch-doux {
+  0%   { translate: calc(var(--g) * 0.9vw) 0; filter: drop-shadow(calc(var(--g) * -0.5vw) 0 rgb(248 0 48 / 0.8)) drop-shadow(calc(var(--g) * 0.5vw) 0 rgb(0 255 102 / 0.6)); }
+  25%  { translate: calc(var(--g) * -1.1vw) 0; filter: drop-shadow(calc(var(--g) * 0.6vw) 0 rgb(248 0 48 / 0.8)); }
+  50%  { translate: calc(var(--g) * 0.45vw) 0; filter: hue-rotate(60deg) saturate(1.5); }
+  75%  { translate: calc(var(--g) * -0.3vw) 0; filter: none; }
+  100% { translate: none; filter: none; }
+}
+@media (prefers-reduced-motion: reduce) { .msg.glitch-fx { animation: none; } }

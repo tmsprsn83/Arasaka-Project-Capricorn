@@ -1,5 +1,5 @@
 // Fenêtre de CAPRI : visage animé, bulle de réponse, champ de saisie (VoiceInput y colle la dictée).
-const { app, BrowserWindow, ipcMain, screen, Notification, Tray, Menu, nativeImage, powerMonitor } = require('electron');
+const { app, BrowserWindow, ipcMain, screen, Notification, Tray, Menu, nativeImage, powerMonitor, globalShortcut } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const { ask, REVEILS } = require('./brain');
@@ -7,6 +7,9 @@ const { takeDue } = require('./reveils');
 const { stripMoods } = require('./tags');
 const { createLumiere } = require('./lumiere');
 const { createMusique } = require('./musique');
+const { createJeu } = require('./jeu');
+const { createSuivi } = require('./ambiance');
+const { startCapture } = require('./capture');
 const { readConfig, createCentrale } = require('./centrale');
 const ntfy = require('./ntfy');
 
@@ -50,6 +53,29 @@ let lumiere = null;
 // fenêtre qui se recharge.
 let musique = null;
 let music = null;
+// Cyberpunk 2077 en cours (jeu.js) : CAPRI le sait, en parle, et ne s'affiche plus sur l'écran principal pendant ce temps.
+let jeu = null;
+let game = { playing: false, since: null };
+// Éclairage qui suit le jeu : 5 fois par seconde, une vignette 64 × 36 de l'écran principal (capture.js), analysée
+// sur place (ambiance.js) puis oubliée. Seulement pendant que Cyberpunk tourne.
+let watching = null;
+function watchGame(on) {
+  watching?.stop();
+  watching = null;
+  if (!on) return;
+  const suivi = createSuivi();
+  watching = startCapture((bmp, w, h) => {
+    const seen = suivi(bmp, w, h);
+    if (seen.degats) lumiere?.degats();
+    if (seen.glitch) lumiere?.glitch();
+    if (seen.color) lumiere?.ecran(seen.color);
+  });
+}
+function gameContext() {
+  if (!game.playing) return '';
+  const minutes = Math.round((Date.now() - game.since) / 60000);
+  return `Tommy joue à Cyberpunk 2077 sur son PC (lancé il y a ${minutes} min). Tu peux en parler avec lui : Night City, ses missions, son build, les personnages. Réponses courtes, il a la tête dans le jeu.`;
+}
 // Centrale sur le VPS (centrale.json) : cerveau, mémoire et réveils là-bas ; sinon tout reste sur le PC.
 let centrale = null;
 
@@ -136,6 +162,7 @@ function createWindow() {
   win.webContents.on('did-finish-load', () => {
     win.webContents.send('capri:fullscreen', win.isFullScreen());
     if (music) win.webContents.send('capri:musique', music);
+    if (game.playing) win.webContents.send('capri:jeu', { ...game, deja: true });
   });
 }
 
@@ -145,7 +172,7 @@ function createWindow() {
 let overlay = null;
 function placeOverlay() {
   const primary = screen.getPrimaryDisplay();
-  if (!dedicatedDisplay() || !settings.overlay) { overlay?.close(); return; }
+  if ((!dedicatedDisplay() || !settings.overlay) && !panelOpen) { overlay?.close(); return; }
   if (!overlay || overlay.isDestroyed()) {
     overlay = new BrowserWindow({
       ...primary.bounds,
@@ -174,16 +201,72 @@ ipcMain.on('capri:volume', (_event, delta) => { const d = Number(delta); if (Num
 ipcMain.handle('capri:settings', () => ({ ...settings }));
 ipcMain.handle('capri:set', (_event, key, value) => ({ ...setSetting(key, value) }));
 ipcMain.on('capri:overlay', (_event, message) => {
-  if (!overlay || overlay.isDestroyed() || !message || typeof message.text !== 'string') return;
-  overlay.webContents.send('overlay:message', { text: message.text.slice(-4000), speaking: message.speaking === true, sound: settings.notifications && message.quiet !== true });
+  if (!message || typeof message.text !== 'string') return;
+  if (message.speaking !== true) remember('capri', message.text); // message fini : gardé pour le panneau des messages
+  if (!overlay || overlay.isDestroyed()) return;
+  overlay.webContents.send('overlay:message', { text: message.text.slice(-4000), speaking: message.speaking === true, sound: settings.notifications }); // son à chaque message, phrases spontanées comprises (Tommy)
+});
+
+// Conversation gardée pour le panneau « MESSAGES » (Win + Maj + F) : les 300 derniers messages, dans
+// conversation.json du dossier de données.
+const HISTORY_FILE = () => path.join(app.getPath('userData'), 'conversation.json');
+let history = [];
+const loadHistory = () => { try { const h = JSON.parse(fs.readFileSync(HISTORY_FILE(), 'utf8')); history = Array.isArray(h) ? h : []; } catch { history = []; } };
+let saveTimer = null;
+function remember(from, text) {
+  const clean = stripMoods(String(text)).trim();
+  if (!clean) return;
+  const last = history[history.length - 1];
+  if (last && last.from === from && last.text === clean) return;
+  history.push({ from, text: clean.slice(0, 4000), at: Date.now() });
+  if (history.length > 300) history = history.slice(-300);
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => { try { fs.writeFileSync(HISTORY_FILE(), JSON.stringify(history)); } catch { /* non gardée */ } }, 1000);
+  if (panelOpen) overlay?.webContents.send('overlay:history', history);
+}
+
+// Panneau des messages façon Cyberpunk 2077, dans le calque de l'écran principal. Ouvert, le calque prend le clavier
+// et la souris au-dessus du panneau seulement (ailleurs, les clics traversent toujours).
+let panelOpen = false;
+function togglePanel(open = !panelOpen) {
+  if (open === panelOpen) return;
+  panelOpen = open;
+  if (open) {
+    placeOverlay();
+    if (!overlay) { panelOpen = false; return; }
+    const show = () => {
+      if (!panelOpen || !overlay) return;
+      overlay.webContents.send('overlay:history', history);
+      overlay.webContents.send('overlay:panel', true);
+      overlay.setIgnoreMouseEvents(true, { forward: true });
+      overlay.setFocusable(true);
+      overlay.focus();
+    };
+    if (overlay.webContents.isLoading()) overlay.webContents.once('did-finish-load', show); else show();
+  } else if (overlay) {
+    overlay.webContents.send('overlay:panel', false);
+    overlay.setIgnoreMouseEvents(true);
+    overlay.setFocusable(false);
+    setTimeout(placeOverlay, 700); // après l'animation de fermeture (calque refermé s'il n'y a pas d'écran dédié)
+  }
+}
+ipcMain.on('overlay:mouse', (_event, inside) => { if (panelOpen) overlay?.setIgnoreMouseEvents(inside !== true, { forward: true }); });
+ipcMain.on('overlay:close', () => togglePanel(false));
+ipcMain.on('capri:messages', () => togglePanel()); // rappel « WIN + MAJ + F » cliqué dans la fenêtre de CAPRI
+// Message tapé dans le panneau : la fenêtre de CAPRI l'envoie comme s'il avait été tapé chez elle.
+ipcMain.on('overlay:send', (_event, text) => {
+  if (typeof text !== 'string' || !text.trim() || text.length > 2000) return;
+  win?.webContents.send('capri:send', text.trim());
 });
 
 ipcMain.handle('capri:ask', (_event, text) => {
   if (typeof text !== 'string' || !text.trim()) return { ok: false };
+  remember('moi', text);
   cancel?.();
   waking?.(); // Tommy parle : il passe avant un réveil en cours.
   const reply = {
     text: text.trim(),
+    context: gameContext(),
     onText: (chunk) => win?.webContents.send('capri:text', chunk),
     onDone: (result) => {
       cancel = null;
@@ -265,12 +348,21 @@ app.on('second-instance', () => showWindow());
 
 app.whenReady().then(() => {
   sessionId = readSession();
+  loadHistory();
+  // Win + Maj + F : panneau des messages sur l'écran principal, n'importe quand (même en jeu).
+  if (!globalShortcut.register('Super+Shift+F', () => togglePanel())) console.error('Raccourci Win + Maj + F déjà pris par Windows ou une autre application');
   loadPhone();
   loadSettings();
   lumiere = createLumiere();
   musique = createMusique((info) => {
     music = { ...music, ...info, thumb: info.changed ? info.thumb || null : music?.thumb ?? null };
     win?.webContents.send('capri:musique', info.changed ? music : { ...music, thumb: undefined });
+  });
+  jeu = createJeu((state) => {
+    game = state;
+    lumiere?.jeu(state.playing); // ventilateurs aux couleurs de Night City
+    watchGame(state.playing); // et qui suivent ce qui se passe à l'écran
+    win?.webContents.send('capri:jeu', state);
   });
   const config = readConfig(app.getPath('userData'));
   if (config) {
@@ -301,4 +393,4 @@ app.whenReady().then(() => {
 });
 app.on('before-quit', () => { quitting = true; });
 app.on('window-all-closed', () => app.quit());
-app.on('will-quit', () => { lumiere?.close(); musique?.close(); centrale?.close(); });
+app.on('will-quit', () => { globalShortcut.unregisterAll(); lumiere?.close(); musique?.close(); jeu?.close(); watching?.stop(); centrale?.close(); });

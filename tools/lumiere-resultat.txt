@@ -1,7 +1,7 @@
 ﻿Service installé et lancé.
 
 Éclairage trouvé :
-MSI_MB[0] « SELECT ALL » style=Steady couleur=128,0,255 fixe=Steady styles=[Off, Wave, Steady, Flame, Breath, ColorRing, Lightning, Meteor, Default]
+MSI_MB[0] « SELECT ALL » style=Meteor couleur=160,0,255 vitesse=3/3 fixe=Steady styles=[Off, Wave, Steady, Flame, Breath, ColorRing, Lightning, Meteor, Default]
 MSI_MB appareils (0) : 
 MSI_MB LED (0, 0) : 
 

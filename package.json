@@ -9,7 +9,7 @@
     "demarrage": "electron tools/demarrage.cjs",
     "demarrage:retirer": "electron tools/demarrage.cjs --retirer",
     "lumiere": "node tools/lumiere.cjs",
-    "test": "node --test src/tags.test.js src/reveils.test.js src/sse.test.js"
+    "test": "node --test src/tags.test.js src/reveils.test.js src/sse.test.js src/jeu.test.js src/ambiance.test.js"
   },
   "devDependencies": {
     "ag-psd": "^33.0.0",

@@ -376,7 +376,12 @@
 
   window.createCapriSpriteFace = function createCapriSpriteFace(canvas, helpers) {
     const { drawMouthShape, MOUTH, HEAD, background } = helpers;
-    const ctx = canvas.getContext('2d');
+    const mainCtx = canvas.getContext('2d');
+    let ctx = mainCtx; // le visage se dessine à part (turnCanvas) puis revient tourné en perspective
+    const turnCanvas = document.createElement('canvas');
+    const turnCtx = turnCanvas.getContext('2d');
+    const pitchCanvas = document.createElement('canvas'); // étape intermédiaire : haut / bas fait, gauche / droite à faire
+    const pitchCtx = pitchCanvas.getContext('2d');
     const face = { ready: false, draw() {} };
     const base = 'visage/';
 
@@ -504,6 +509,7 @@
       note: { text: ['♪', '♫'], fill: '#00ff66', glow: '#00ff66' },
       z: { text: ['z', 'Z'], fill: '#cfe0ff', glow: '#0055ff' },
       idee: { text: ['!'], fill: '#ffffff', glow: '#00ff66' },
+      question: { text: ['?'], fill: '#ffffff', glow: '#00ff66' },
       etoile: { text: ['✦', '✧'], fill: '#ffffff', glow: '#00ff66' },
     };
     function drawSign(ctx, p, F) {
@@ -518,7 +524,7 @@
       if (SIGN[kind]) {
         const sign = SIGN[kind];
         if (kind === 'z') ctx.scale(0.7 + life * 0.8, 0.7 + life * 0.8);
-        if (kind === 'idee') ctx.scale(1 + Math.max(0, 0.4 - life) * 1.5, 1 + Math.max(0, 0.4 - life) * 1.5);
+        if (kind === 'idee' || kind === 'question') ctx.scale(1 + Math.max(0, 0.4 - life) * 1.5, 1 + Math.max(0, 0.4 - life) * 1.5);
         ctx.rotate(Math.sin(p.life * 0.12) * 0.25);
         ctx.font = '700 32px Bahnschrift, "Segoe UI Symbol", sans-serif';
         ctx.textAlign = 'center';
@@ -856,6 +862,60 @@
       ctx.restore();
     }
 
+    // Terminal de piratage (activité « piratage » de capri.js, Tommy) : au-dessus de sa tête à droite, là où sont les
+    // trois points ; le « breach protocol » de Cyberpunk 2077 : en-tête jaune, codes hexadécimaux qui défilent, colonne
+    // sélectionnée, barre d'envoi, puis ACCESS GRANTED. Fondu à l'entrée et à la sortie, petits sursauts de glitch.
+    const hack = { a: 0, start: 0, on: false };
+    const HACK_CODES = ['1C', '55', '7A', 'BD', 'E9', 'FF'];
+    function drawHack(ctx, F, on) {
+      const now = performance.now();
+      if (on && !hack.on) hack.start = now;
+      hack.on = on;
+      hack.a += ((on ? 1 : 0) - hack.a) * 0.12;
+      if (hack.a < 0.02) return;
+      const t = (now - hack.start) / 1000;
+      const p = Math.min(1, t / 6.2);
+      const W = 190, H = 104, YEL = '#d0ed57', CY = '#5ef2f2';
+      ctx.save();
+      ctx.translate(F.x(window.CapriMusic ? 200 : 330) + (Math.random() < 0.04 ? (Math.random() - 0.5) * 8 : 0), F.y(-15));
+      ctx.scale(F.k * 1.15, F.k * 1.15);
+      ctx.globalAlpha = hack.a;
+      // L'ouverture se déploie de gauche à droite.
+      ctx.beginPath();
+      ctx.rect(-4, -4, (W + 8) * Math.min(1, hack.a * 1.3), H + 8);
+      ctx.clip();
+      ctx.fillStyle = 'rgba(8, 12, 18, 0.88)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.strokeStyle = YEL; ctx.lineWidth = 1.5; ctx.shadowColor = YEL; ctx.shadowBlur = 8;
+      ctx.strokeRect(0.75, 0.75, W - 1.5, H - 1.5);
+      ctx.fillStyle = YEL; ctx.fillRect(0, 0, W, 15);
+      ctx.shadowBlur = 0;
+      ctx.font = '700 9px Bahnschrift, Consolas, sans-serif'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#0b0f14'; ctx.fillText('BREACH PROTOCOL', 6, 8);
+      ctx.textAlign = 'right'; ctx.fillText(p < 1 ? (9.9 - p * 9.9).toFixed(2) : '0.00', W - 6, 8); ctx.textAlign = 'left';
+      // Matrice de codes : elle défile, la colonne visée s'allume.
+      ctx.font = '700 11px Consolas, monospace';
+      const col = Math.floor(t * 2.4) % 6, tick = Math.floor(t * 7);
+      for (let r = 0; r < 4; r++) for (let c = 0; c < 6; c++) {
+        const code = HACK_CODES[(r * 7 + c * 3 + tick * (r % 2 ? 1 : 5)) % 6];
+        const lit = c === col;
+        ctx.fillStyle = lit ? CY : 'rgba(208, 237, 87, 0.75)';
+        ctx.shadowColor = lit ? CY : 'transparent'; ctx.shadowBlur = lit ? 6 : 0;
+        ctx.fillText(code, 8 + c * 30, 27 + r * 14);
+        if (lit && r === 0) { ctx.strokeStyle = CY; ctx.lineWidth = 1; ctx.strokeRect(4 + c * 30, 20, 25, 58); }
+      }
+      ctx.shadowBlur = 0;
+      // Barre d'envoi.
+      ctx.strokeStyle = 'rgba(208, 237, 87, 0.6)'; ctx.strokeRect(8, 86, W - 16, 10);
+      ctx.fillStyle = p < 1 ? YEL : '#00ff66'; ctx.fillRect(10, 88, (W - 20) * p, 6);
+      ctx.font = '700 9px Bahnschrift, Consolas, sans-serif';
+      ctx.fillStyle = p < 1 ? YEL : '#00ff66';
+      ctx.shadowColor = ctx.fillStyle; ctx.shadowBlur = p < 1 ? 0 : 10;
+      ctx.textAlign = 'right';
+      ctx.fillText(p < 1 ? `UPLOAD ${Math.floor(p * 100)}%` : 'ACCESS GRANTED', W - 8, 79);
+      ctx.restore();
+    }
+
     // Corps animé par Motion (Tommy : « débordante d'énergie », « anime-la avec Motion ») : trois couches additionnées
     // au mouvement des humeurs (fx de capri.js) :
     // - vie : rebond continu en boucle, dont le tempo et l'amplitude suivent son énergie (surexcitée → endormie) ;
@@ -1053,6 +1113,11 @@
           ctx.fillStyle = css(background);
           ctx.fillRect(0, 0, w, h);
           drawBackdrop(ctx, w, h, state);
+          // Le visage se dessine sur son propre calque, recopié ensuite tourné (plus bas).
+          if (turnCanvas.width !== w || turnCanvas.height !== h) { turnCanvas.width = w; turnCanvas.height = h; }
+          turnCtx.setTransform(1, 0, 0, 1, 0, 0);
+          turnCtx.clearRect(0, 0, w, h);
+          ctx = turnCtx;
           // Marge de 12 % en haut et en bas : rebonds, danse et sauts ne font jamais sortir la visière de l'écran
           // (même quand la bulle de parole réduit la place).
           const s = Math.min(w / BOX.w, h / (BOX.h * 1.24));
@@ -1073,11 +1138,8 @@
           const tilt = hd.angleZ * 0.4 + fx.rot + bd.rot;
           ctx.rotate((4 * Math.tanh(tilt / 4) * Math.PI) / 180);
           ctx.scale(fx.sx * bd.sx, fx.sy * bd.sy);
-          // Tête tournée à gauche ou à droite (angleX, Tommy) : la visière glisse de ce côté, se rétrécit un peu et
-          // s'incline en perspective (le côté qui s'éloigne remonte). Bornée en douceur : jamais hors de l'écran.
-          const yaw = Math.tanh(hd.angleX / 1.6);
-          ctx.transform(1 - 0.08 * Math.abs(yaw), -yaw * 0.04, 0, 1, 0, 0);
-          ctx.translate(-pivot[0] + (yaw * 26 +fx.dx + (fx.jx || 0) + bd.x) * F.k, -pivot[1] + (hd.angleY * 8 + hd.bob * 0.6 + fx.dy + (fx.jy || 0) + bd.y) * F.k);
+          // Tête tournée à gauche ou à droite (angleX) : faite plus bas, en perspective, sur le calque du visage.
+          ctx.translate(-pivot[0] + (fx.dx + (fx.jx || 0) + bd.x) * F.k, -pivot[1] + (hd.angleY * 8 + hd.bob * 0.6 + fx.dy + (fx.jy || 0) + bd.y) * F.k);
 
           // Iris : suit le regard, vu seulement dans son anneau.
           const eye = animateEyes(pose, state);
@@ -1169,9 +1231,53 @@
           }
           ctx.restore();
 
+          // Tête tournée (Tommy : « qu'on la voie vraiment tourner la tête », puis vers le haut et le bas) : le calque du
+          // visage revient déformé en deux passes, comme une rotation autour d'un axe horizontal (haut / bas, par lignes)
+          // puis d'un axe vertical (gauche / droite, par colonnes) : le côté qui s'éloigne se resserre et rapetisse, celui
+          // qui approche grandit, et tout glisse vers où elle regarde. Jusqu'à ±40° de côté et ±26° en hauteur.
+          const yaw = Math.tanh(hd.angleX / 1.3) * 0.7;
+          const pitch = Math.tanh(hd.angleY / 0.9) * 0.45;
+          const faceT = ctx.getTransform();
+          ctx = mainCtx;
+          ctx.setTransform(1, 0, 0, 1, 0, 0);
+          {
+            const cosY = Math.cos(yaw), sinY = Math.sin(yaw), cosP = Math.cos(pitch), sinP = Math.sin(pitch);
+            const halfW = (BOX.w * s) / 2, halfH = (BOX.h * s) / 2;
+            const X0 = w / 2, Y0 = h * 0.6;
+            // Haut / bas : chaque ligne descend ou monte (tassée) et s'élargit ou se resserre (en regardant en bas, le
+            // haut s'éloigne).
+            let src = turnCanvas;
+            if (Math.abs(pitch) > 0.005) {
+              if (pitchCanvas.width !== w || pitchCanvas.height !== h) { pitchCanvas.width = w; pitchCanvas.height = h; }
+              pitchCtx.clearRect(0, 0, w, h);
+              const shiftY = sinP * halfH * 0.55;
+              const NY = 90, sh = h / NY;
+              for (let j = 0; j < NY; j++) {
+                const y0 = j * sh, y1 = y0 + sh;
+                const v = Math.max(-2, Math.min(2, ((y0 + y1) / 2 - Y0) / halfH));
+                const ky = 1 + v * sinP * 0.3;
+                const d0 = Y0 + (y0 - Y0) * cosP + shiftY, d1 = Y0 + (y1 - Y0) * cosP + shiftY;
+                pitchCtx.drawImage(turnCanvas, 0, y0, w, sh + 1, X0 - X0 * ky, d0, w * ky, d1 - d0 + 1);
+              }
+              src = pitchCanvas;
+            }
+            // Gauche / droite : chaque colonne grandit ou rapetisse, et glisse vers où elle regarde.
+            const shiftX = sinY * halfW * 0.32;
+            const NX = Math.abs(yaw) > 0.005 ? 64 : 1, sw = w / NX;
+            for (let i = 0; i < NX; i++) {
+              const x0 = i * sw, x1 = x0 + sw;
+              const u = Math.max(-1.4, Math.min(1.4, ((x0 + x1) / 2 - X0) / halfW));
+              const kx = 1 - u * sinY * 0.34;
+              const d0 = X0 + (x0 - X0) * cosY + shiftX, d1 = X0 + (x1 - X0) * cosY + shiftX;
+              ctx.drawImage(src, x0, 0, sw + 1, h, d0, Y0 - Y0 * kx, d1 - d0 + 1, h * kx);
+            }
+          }
+          ctx.setTransform(faceT);
+
           // Petits signes : étincelles, notes, « z », « ! », veine de colère, goutte.
           for (const p of particles) drawSign(ctx, p, F);
           drawDots(ctx, F, state.mode === 'thinking');
+          drawHack(ctx, F, !!state.hacking);
           // Glitch : bandes décalées.
           // Décalage réduit (Tommy), encore plus quand elle parle.
           if (state.glitch > 0.05) {

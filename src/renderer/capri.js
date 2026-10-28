@@ -120,6 +120,24 @@
     bug: () => [
       ...lineRead(0), ...lineRead(1),
       { pose: 'colere', ms: 1500, spawn: 'veine' }, { pose: 'boude', ms: 1300 }, { pose: 'neutre', ms: 300 }],
+    // Piratage (Tommy) : tête tournée en bas à droite, longtemps, le terminal de brèche ouvert au-dessus de sa tête à
+    // droite (visage-sprites.js, drawHack) ; petits glitchs pendant qu'elle force l'accès, puis fière d'elle.
+    piratage: () => [
+      { pose: 'concentree', ms: 700, head: [0.8, 0.8], gaze: [12, 9] },
+      { pose: 'concentree', ms: 6500, head: [0.85, 0.85], hack: true, glitchEvery: 1700, gaze: (p) => [11 + Math.sin(p * 40) * 3, 9] },
+      { pose: 'malice', ms: 1300, head: [0.3, 0.1], hack: true, spawn: 'idee' }, { pose: 'neutre', ms: 300 }],
+    // Rêverie : elle lève les yeux en haut à gauche, étincelles, puis revient.
+    reverie: () => [
+      { pose: 'neutre', ms: 2600, head: [-0.6, -0.9], gaze: [-10, -10], spawn: 'etoile', every: 700 },
+      { pose: 'coeur', ms: 1200, head: [-0.3, -0.5] }, { pose: 'neutre', ms: 300 }],
+  };
+  // Réactions déclenchées par ce qui se passe autour d'elle (api.react), même au milieu d'une activité.
+  const REACTIONS = {
+    // Le NOW PLAYING s'ouvre en haut à droite : elle le regarde, surprise, « ? », puis elle se met à fredonner.
+    musique: () => [
+      { pose: 'surprise', ms: 1700, head: [0.9, -0.85], gaze: [15, -10], spawn: 'question' },
+      { pose: 'joie', ms: 1100, head: [0.6, -0.5], gaze: [10, -6] },
+      { pose: 'fredonne', ms: 3200, fx: 'fredonne', spawn: 'note', every: 500 }, { pose: 'neutre', ms: 300 }],
   };
 
   const clone = (pose) => JSON.parse(JSON.stringify(pose));
@@ -708,14 +726,23 @@
         ctx.translate(w / 2, h / 2);
         ctx.scale(s, s);
         ctx.translate(-(FLAT_BOX.x + FLAT_BOX.w / 2), -(FLAT_BOX.y + FLAT_BOX.h / 2));
-        // Tête : glisse et penche ; yeux et bouche avancent un peu plus (profondeur).
+        // Tête : penche, et tourne vraiment à gauche / à droite (Tommy : « qu'on la voie tourner la tête ») : rotation en
+        // perspective autour d'un axe vertical derrière le visage. Le côté qui s'éloigne se resserre et rapetisse, celui
+        // qui approche grandit ; yeux et bouche, plus en avant que la visière, se décalent davantage (profondeur).
         const hd = state.head;
+        const yaw = Math.max(-1, Math.min(1, hd.angleX / 1.3)) * 0.75; // jusqu’à ±43°
+        const cosY = Math.cos(yaw), sinY = Math.sin(yaw);
+        const turn3d = (x, y, depth) => {
+          const u = (x - 210) / 210; // -1 bord gauche … 1 bord droit
+          const near = 1 - u * sinY * 0.5; // côté qui approche : plus grand
+          return [210 + (x - 210) * cosY + depth * sinY, 205 + (y - 205) * near, near];
+        };
         ctx.translate(210, 210);
         ctx.rotate((hd.angleZ * 0.4 * Math.PI) / 180);
-        ctx.translate(-210 + hd.angleX * 10, -210 + hd.angleY * 8 + hd.bob * 0.6);
+        ctx.translate(-210, -210 + hd.angleY * 8 + hd.bob * 0.6);
         if (VISOR) {
           // Visière découpée : copie violette décalée (liseré), puis le vert.
-          const shape = (dx, dy) => { ctx.beginPath(); VISOR.visor.shape.forEach(([x, y], i) => (i ? ctx.lineTo(x + dx, y + dy) : ctx.moveTo(x + dx, y + dy))); ctx.closePath(); };
+          const shape = (dx, dy) => { ctx.beginPath(); VISOR.visor.shape.forEach(([x, y], i) => { const [px, py] = turn3d(x + dx, y + dy, 80); if (i) ctx.lineTo(px, py); else ctx.moveTo(px, py); }); ctx.closePath(); };
           shape(...VISOR.visor.shift);
           ctx.fillStyle = rgb(C.purple);
           ctx.fill();
@@ -726,14 +753,18 @@
           ctx.fillStyle = rgb(FLAT.colors.green);
           ctx.fillRect(-4000, vy0, 8420, vy1 - vy0);
         }
-        ctx.save();
-        ctx.translate(hd.angleX * 7, hd.angleY * 5);
-        eyes.forEach((e, i) => drawEye(e, i, snap));
-        ctx.restore();
-        ctx.save();
-        ctx.translate(hd.angleX * 6, hd.angleY * 4);
-        drawMouth(pose.mouth, glitching);
-        ctx.restore();
+        // Chaque œil et la bouche suivent la rotation autour de leur centre : déplacés, resserrés, agrandis ou rapetissés.
+        const placed = (cx, cy, depth, draw) => {
+          const [px, py, near] = turn3d(cx, cy, depth);
+          ctx.save();
+          ctx.translate(px, py + hd.angleY * 5);
+          ctx.scale(cosY * near, near);
+          ctx.translate(-cx, -cy);
+          draw();
+          ctx.restore();
+        };
+        eyes.forEach((e, i) => placed(e.cx, e.cy, 140, () => drawEye(e, i, snap)));
+        placed(FLAT_MOUTH.x, FLAT_MOUTH.y, 125, () => drawMouth(pose.mouth, glitching));
         // Cœurs (positions de l'image HD ramenées autour du visage).
         for (const p of particles) heart(210 + (p.x - HEAD.x) * 0.4, 200 + (p.y - HEAD.y) * 0.4, p.s * 0.8, Math.sin(Math.min(1, p.life / p.max) * Math.PI));
         // Glitch : bandes décalées.
@@ -836,6 +867,7 @@
         if (kind === 'note') Object.assign(p, { x: HEAD.x + 380 + r * 90, y: HEAD.y + 250, vx: 0.8 + r * 0.8, vy: -1.6 - r, max: 90 });
         if (kind === 'z') Object.assign(p, { x: HEAD.x + 420, y: HEAD.y - 250, vx: 1.1, vy: -1.2, max: 110, s: 1.6 });
         if (kind === 'idee') Object.assign(p, { x: HEAD.x + 420, y: HEAD.y - 330, vy: -0.25, max: 70, s: 2.4 });
+        if (kind === 'question') Object.assign(p, { x: HEAD.x + 430, y: HEAD.y - 330, vy: -0.15, max: 100, s: 2.6 });
         if (kind === 'veine') Object.assign(p, { x: HEAD.x + 380, y: HEAD.y - 310, max: 90, s: 2.4 });
         // Étincelles : au-dessus de la visière ou de part et d'autre de la bouche, jamais sur les yeux.
         if (kind === 'etoile') Object.assign(p, { x: HEAD.x + (r < 0.5 ? -1 : 1) * (320 + Math.random() * 330), y: Math.random() < 0.5 ? HEAD.y - 330 - Math.random() * 60 : HEAD.y + 300 + Math.random() * 150, vx: (Math.random() - 0.5) * 0.6, vy: -0.4 - Math.random() * 0.6, max: 45 + Math.random() * 30, s: 1.2 + Math.random() * 1.2 });
@@ -859,6 +891,14 @@
         state.activity = { name: key, steps: ACTIVITIES[key](), i: -1, stepAt: t, stepAt0: t, spawnAt: 0, glitchAt: 0 };
         state.moodUntil = 0;
         return key;
+      },
+      // Réaction (REACTIONS) : remplace l'activité en cours ; pas pendant qu'elle parle à Tommy.
+      react(name) {
+        if (!REACTIONS[name] || state.mode === 'speaking') return null;
+        const t = performance.now();
+        state.activity = { name, steps: REACTIONS[name](), i: -1, stepAt: t, stepAt0: t, spawnAt: 0, glitchAt: 0 };
+        state.moodUntil = 0;
+        return name;
       },
       get activities() { return Object.keys(ACTIVITIES); },
       get state() { return state; }, // diagnostic (outils d'analyse de l'animation)
@@ -1051,13 +1091,21 @@
       if (name === 'rire') { target.mouth.open = 0.45 + Math.abs(Math.sin(t * 15)) * 0.45; target.angleZ += Math.sin(t * 18) * 2.5; }
       // Elle tourne la tête à gauche ou à droite de temps en temps (Tommy), le regard en avance sur la tête ; moins
       // quand elle parle (elle reste tournée vers Tommy), pas pendant les activités qui ont leur propre regard.
+      // Et vers le haut ou le bas (Tommy), en même temps ou non. Une étape d'activité peut imposer où elle regarde
+      // (head : [gauche -1 … droite 1, haut -1 … bas 1]).
       if (now > state.turnAt) {
         state.turn = Math.random() < 0.4 ? 0 : (Math.random() < 0.5 ? -1 : 1) * (0.55 + Math.random() * 0.45);
-        state.turnAt = now + (state.turn ? 1400 + Math.random() * 2600 : 2500 + Math.random() * 4500);
+        state.nod = Math.random() < 0.5 ? 0 : (Math.random() < 0.5 ? -1 : 1) * (0.45 + Math.random() * 0.5);
+        state.turnAt = now + (state.turn || state.nod ? 1400 + Math.random() * 2600 : 2500 + Math.random() * 4500);
       }
-      const turn = busyStep && step.gaze ? 0 : state.turn * (speaking ? 0.45 : 1);
+      const look = busyStep && step.head;
+      const free = !(busyStep && step.gaze);
+      const turn = look ? look[0] : free ? state.turn * (speaking ? 0.45 : 1) : 0;
+      const nod = look ? look[1] : free ? (state.nod || 0) * (speaking ? 0.4 : 1) : 0;
       target.angleX += turn * 1.4;
-      target.gaze = [target.gaze[0] + turn * 9, target.gaze[1]];
+      target.angleY += nod * 0.8;
+      target.gaze = [target.gaze[0] + turn * 9, target.gaze[1] + nod * 6];
+      state.hacking = !!(busyStep && step.hack); // terminal de piratage au-dessus de sa tête (visage-sprites.js)
       // Mouvements de repos : la tête n'est jamais figée.
       target.angleX += noise(t * 1.6, 1) * 0.35;
       target.angleY += noise(t * 1.6, 2) * 0.2 + state.talk * 0.2;

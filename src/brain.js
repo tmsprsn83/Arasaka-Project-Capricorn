@@ -47,11 +47,12 @@ function persona() {
 }
 
 // Une réplique : le texte arrive par morceaux (onText), puis la fin (onDone) avec l'identifiant de session.
-function ask({ text, sessionId, onText, onDone, onError }) {
+// context : ce qui se passe sur le PC à cet instant (jeu en cours…), ajouté à la fin du prompt système.
+function ask({ text, sessionId, context = '', onText, onDone, onError }) {
   const args = [
     '-p',
     '--output-format', 'stream-json', '--verbose', '--include-partial-messages',
-    '--append-system-prompt', persona(),
+    '--append-system-prompt', persona() + (context ? `\n\n## En ce moment\n${context}` : ''),
     // Réglages du projet seulement : ni les extensions ni les règles de développement de la session de Tommy.
     '--setting-sources', 'project',
     '--add-dir', VAULT,

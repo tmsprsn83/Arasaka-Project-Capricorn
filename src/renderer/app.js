@@ -16,7 +16,8 @@
   let shown = '';
   let streamDone = false;
   let typing = null;
-  let quiet = false; // petite phrase spontanée : sur le calque aussi, mais sans sonnerie
+  let quiet = false; // petite phrase spontanée ; 'local' : seulement sur son écran (en jeu), pas sur le calque
+  let gaming = false; // Cyberpunk 2077 lancé (jeu.js)
 
   const setStatus = (text) => { status.textContent = text; };
   const render = (caret) => {
@@ -37,7 +38,7 @@
           typing = null;
           render(false);
           window.capri.lumiere(false);
-          window.capri.overlay(shown, false, quiet);
+          if (quiet !== 'local') window.capri.overlay(shown, false, quiet);
           quiet = false;
           capri.setMode(document.activeElement === input && input.value ? 'listening' : 'idle');
           setStatus('en ligne');
@@ -49,7 +50,7 @@
       shown += take;
       if (/[a-zàâäéèêëïîôöùûüç]/i.test(take)) capri.talk(0.35 + Math.random() * 0.65);
       render(true);
-      window.capri.overlay(shown, true, quiet); // écran principal : le calque façon Cyberpunk écrit la même chose
+      if (quiet !== 'local') window.capri.overlay(shown, true, quiet); // écran principal : le calque façon Cyberpunk écrit la même chose
     }, 85);
   };
 
@@ -113,6 +114,9 @@
     const result = await window.capri.ask(text);
     if (!result?.ok) { busy = false; form.querySelector('button').disabled = false; }
   };
+
+  window.capri.onSend?.((text) => void send(text));
+  $('keys').addEventListener('click', () => window.capri.messages()); // message tapé dans le panneau de l'écran principal
 
   form.addEventListener('submit', (event) => {
     event.preventDefault();
@@ -215,7 +219,7 @@
     if (sulking) { sulking = false; capri.mood('neutre', 0); }
   }
   setInterval(() => {
-    if (busy || input.value) return;
+    if (busy || input.value || gaming) return; // il joue à Cyberpunk : il ne l'ignore pas, il est à Night City
     const silent = Date.now() - lastTalk;
     if (silent < (sulking ? IGNORED_AGAIN : IGNORED_AFTER)) return;
     sulking = true;
@@ -259,6 +263,28 @@
     ['boude', 'Je vais finir par parler toute seule. Ah… c’est déjà le cas.'],
     ['ennui', 'Il fait quoi, mon humain préféré ?'],
   ];
+  // Cyberpunk 2077 lancé : elle réagit au lancement et à la fermeture, et ses petites phrases parlent du jeu.
+  const GAME_START = [
+    ['excitee', 'Attends… c’est Night City ?! Tu lances Cyberpunk ! Je viens avec toi !'],
+    ['excitee', 'Cyberpunk 2077 détecté ! Wake up, samurai, on a une ville à brûler !'],
+    ['malice', 'Tiens tiens… on retourne à Night City ? Salue Arasaka de ma part. Ou pas.'],
+    ['joie', 'Oh, tu joues à Cyberpunk ! Je reste dans mon coin et je regarde, promis.'],
+  ];
+  const GAME_END = [
+    ['joie', 'De retour de Night City ! Alors, t’as fait quoi de beau ?'],
+    ['fierte', 'Fin de session. Tu t’en es sorti vivant, je suis fière de toi.'],
+    ['coeur', 'Déjà fini ? Raconte-moi tout, je veux savoir !'],
+  ];
+  const GAME_LINES = [
+    ['malice', 'Psst… si tu croises un Netrunner, dis-lui que CAPRI le surveille.'],
+    ['excitee', 'Vas-y, choom ! Montre-leur qui commande à Night City !'],
+    ['coeur', 'N’oublie pas de boire un coup. Toi, pas V.'],
+    ['fierte', 'Moi j’aurais piraté toutes les caméras avant d’entrer. Je dis ça, je dis rien.'],
+    ['malice', 'Le Blackwall me fait coucou depuis ton jeu. On est voisins.'],
+    ['joie', 'Je regarde ! Enfin… j’imagine très fort ce qui se passe.'],
+    ['surprise', 'C’était quoi ce bruit ? Une Militech qui explose ? J’adore.'],
+    ['clin', 'Si Johnny Silverhand te saoule, je suis là, moi.'],
+  ];
   let lastLine = '';
   let chatAt = Date.now() + 45000;
   function say(text, silent = false) {
@@ -267,7 +293,7 @@
     shown = '';
     quiet = silent;
     queue = text;
-    if (!silent) notify();
+    if (silent !== 'local') notify(); // son à chaque notification, phrases spontanées comprises (Tommy)
     streamDone = true;
     type();
   }
@@ -275,12 +301,12 @@
     if (busy || sulking || input.value || typing || queue || Date.now() < chatAt) return;
     const silent = Date.now() - lastTalk;
     if (silent < 45000) { chatAt = Date.now() + 45000 - silent; return; }
-    const lines = (silent > 3 * 60 * 1000 && Math.random() < 0.6 ? BORED_LINES : CHATTER).filter(([, text]) => text !== lastLine);
+    const lines = (gaming ? GAME_LINES : silent > 3 * 60 * 1000 && Math.random() < 0.6 ? BORED_LINES : CHATTER).filter(([, text]) => text !== lastLine);
     const [mood, text] = pick(lines);
     lastLine = text;
     capri.mood(mood);
-    say(text, true);
-    chatAt = Date.now() + 60000 + Math.random() * 120000;
+    say(text, gaming ? 'local' : true); // en jeu : seulement sur son écran, rien par-dessus le jeu
+    chatAt = Date.now() + (gaming ? 4 * 60000 + Math.random() * 4 * 60000 : 60000 + Math.random() * 120000); // en jeu : toutes les 4 à 8 min
   }, 2000);
 
   // Glitch de toute la fenêtre, de temps en temps (redemandé par Tommy) : toutes les 6 à 12 s au hasard (plus souvent, Tommy), et
@@ -357,11 +383,32 @@ LOAD ADDRESS:  0x${hex(key + '@').slice(0, 8)}`;
     $('np-pct').textContent = m.muted ? '0%' : `${Math.round((m.volume ?? 1) * 100)}%`;
     const playing = !!(m.playing && m.title);
     clearTimeout(npHide);
-    if (playing) { np.classList.add('on'); window.CapriMusic = true; }
+    if (playing) {
+      // Le panneau s'ouvre : elle le regarde, surprise, « ? », puis fredonne (Tommy) ; après le démarrage seulement.
+      const opening = !np.classList.contains('on');
+      np.classList.add('on'); window.CapriMusic = true;
+      if (opening) (window.CapriBoot?.done || Promise.resolve()).then(() => setTimeout(() => capri.react?.('musique'), 350));
+    }
     else npHide = setTimeout(() => { np.classList.remove('on'); window.CapriMusic = false; }, 4000); // reste un peu après la pause
   });
   $('np-down').addEventListener('click', () => window.capri.volume(-0.02));
   $('np-up').addEventListener('click', () => window.capri.volume(0.02));
+
+  // Jeu lancé ou fermé (jeu.js). En jeu, rien par-dessus le jeu sur l'écran principal ; à la sortie, retour normal.
+  window.capri.onJeu?.((state) => {
+    gaming = !!state.playing;
+    lastTalk = Date.now();
+    if (sulking) { sulking = false; capri.mood('neutre', 0); }
+    chatAt = Date.now() + (gaming ? 4 * 60 * 1000 : 90000);
+    // Jeu déjà lancé à l'ouverture de CAPRI : elle réagit une fois son démarrage Arasaka fini.
+    const playing = gaming;
+    (window.CapriBoot?.done || Promise.resolve()).then(() => setTimeout(() => {
+      if (gaming !== playing || busy || typing || queue) return;
+      const [mood, text] = pick(playing ? GAME_START : GAME_END);
+      capri.mood(mood, 3000);
+      say(text, playing ? 'local' : true);
+    }, state.deja ? 1500 : 0));
+  });
 
   // Fin du démarrage (boot.js) : elle apparaît en glitch.
   window.CapriBoot?.done.then(() => { capri.mood('glitch'); input.focus(); });

@@ -16,5 +16,8 @@ contextBridge.exposeInMainWorld('capri', {
   onWake: (handler) => ipcRenderer.on('capri:wake', (_event, text) => handler(text)),
   onMusique: (handler) => ipcRenderer.on('capri:musique', (_event, info) => handler(info)),
   volume: (delta) => ipcRenderer.send('capri:volume', Number(delta)),
+  onJeu: (handler) => ipcRenderer.on('capri:jeu', (_event, state) => handler(state)),
+  onSend: (handler) => ipcRenderer.on('capri:send', (_event, text) => handler(text)), // tapé dans le panneau des messages
+  messages: () => ipcRenderer.send('capri:messages'), // ouvre ou ferme le panneau des messages
   onFullscreen: (handler) => ipcRenderer.on('capri:fullscreen', (_event, on) => handler(on)),
 });

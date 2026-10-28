@@ -43,6 +43,8 @@
   window.capriOverlay.onMessage(({ text, speaking, sound }) => {
     soundOn = sound !== false; // notifications coupées dans le menu de l'icône : pas de son
     if (typeof text !== 'string') return;
+    // Panneau des messages ouvert : elle écrit dedans, pas de carte d'appel par-dessus.
+    if (window.CapriMessages?.isOpen()) { window.CapriMessages.live(text, speaking); return; }
     clearTimeout(hideTimer);
     if (text && !visible) enter();
     // Nouveau message (pas la suite du précédent) : petit sursaut de glitch sur la carte.
