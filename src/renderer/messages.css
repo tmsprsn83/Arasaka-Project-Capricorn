@@ -179,4 +179,3 @@
   75%  { translate: calc(var(--g) * -0.3vw) 0; filter: none; }
   100% { translate: none; filter: none; }
 }
-@media (prefers-reduced-motion: reduce) { .msg.glitch-fx { animation: none; } }

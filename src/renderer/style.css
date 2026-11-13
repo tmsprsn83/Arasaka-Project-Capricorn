@@ -47,7 +47,6 @@ body.glitch-fx.glitch-doux { --g: 0.18; animation-name: glitch-doux; }
   75%  { transform: translate(calc(var(--g) * -0.3vw), 0); filter: none; }
   100% { transform: none; filter: none; }
 }
-@media (prefers-reduced-motion: reduce) { body.glitch-fx { animation: none; } }
 
 /* Interface cachée tant que la souris ne bouge pas sur la fenêtre (app.js pose ui-on), curseur compris. */
 body:not(.ui-on), body:not(.ui-on) * { cursor: none !important; }
@@ -223,9 +222,6 @@ body.chat-hidden:not(.chat-peek) .ask { max-height: 0; padding-bottom: 0; opacit
 @keyframes blink { 50% { opacity: 0; } }
 @keyframes pop { from { opacity: 0; transform: translateY(8px) scale(0.98); } }
 
-@media (prefers-reduced-motion: reduce) {
-  .brand .dot, .bubble, .bubble .caret { animation: none; }
-}
 
 /* Démarrage Arasaka façon Cyberpunk 2077 (boot.js, animé par Motion) : rouge Arasaka et blanc sur noir, accents
    cyan de l'interface du jeu, cadres à coins coupés, petits textes techniques, glitch. Les états de départ sont ici ;
@@ -514,7 +510,6 @@ body.chat-hidden:not(.chat-peek) .ask { max-height: 0; padding-bottom: 0; opacit
   color: var(--np-cyan);
   text-shadow: 0 0 6px rgb(148 230 239 / 0.4);
 }
-@media (prefers-reduced-motion: reduce) { .np.on .np-frame, .np.on .np-info, .np-title.swap { animation: none; } }
 
 /* Ce qu'elle écrit n'est plus affiché en bas de la fenêtre (Tommy) : la conversation se lit dans le panneau des
    messages (Win + Maj + F). app.js remplit toujours la bulle, pour le calque et le rythme de la parole. */
